@@ -1,4 +1,4 @@
-// Changed by Pralvo: adds the plugin route seam. See docs/plugins.md.
+// Changed by Pralvo: adds the plugin route seam and the report-a-problem page. See docs/plugins.md.
 
 package api
 
@@ -94,6 +94,7 @@ func (a *API) createRouter(cfg *config.Config) *fiber.App {
 	app.Get("/", SinglePageApplication(cfg.UI))
 	app.Get("/endpoints/:key", SinglePageApplication(cfg.UI))
 	app.Get("/suites/:key", SinglePageApplication(cfg.UI))
+	app.Get("/report-a-problem", SinglePageApplication(cfg.UI))
 	// Health endpoint
 	healthHandler := health.Handler().WithJSON(true)
 	app.Get("/health", func(c *fiber.Ctx) error {
