@@ -33,7 +33,7 @@ A plugin that cannot run never stops the status page. It is logged with a state 
 | `feeds` | Publishes notices at `/feed/atom.xml`, `/feed/rss.xml` and `/feed/feed.json` | Nothing |
 | `incidents` | Internal incidents and public reports, with a token API and notices | `database` |
 | `maintenance-windows` | Dated maintenance on the status page, with optional alert silencing | Nothing |
-| `report-pages` | Public pages for published reports at `/reports` and `/reports/{id}` | `incidents` to show reports |
+| `report-pages` | Public pages for published reports at `/reports` and `/reports/{id}`, and the same as JSON under `/api/v1/reports` | `incidents` to show reports |
 
 ```yaml
 plugins:
@@ -159,7 +159,9 @@ plugins:
 
 The pages are plain HTML rendered on the server, with no script, and every stored value is escaped. Times are shown in UTC. They are cached for 30 seconds, so a new update shows within about that long.
 
-The pages want `incidents` rather than needing it, so they stay up without it. If the incidents plugin is not running, or the database fails or takes longer than 3 seconds, they answer `503` with a short page saying reports are unavailable, which is never cached. The status page, its notices and the feeds keep working.
+The same reports are available as JSON for the page's own scripts. `GET /api/v1/reports` returns `{"reports": [...], "page": 1, "more": false}`, each report with its latest update, and takes the same `?page=`. `GET /api/v1/reports/{id}` returns one report with every update, newest first. A report has `id`, `title`, `stage`, `endpoints` (`key`, `name`, `impact`), `updates` (`stage`, `at`, `message`), `publishedAt`, `resolvedAt` when resolved, and `updatedAt`. It never says who wrote a report or an update. A malformed page number is a `400`, a page past the end is an empty list, and a draft or unknown ID is a `404` with `{"error": "report not found"}`.
+
+The pages want `incidents` rather than needing it, so they stay up without it. If the incidents plugin is not running, or the database fails or takes longer than 3 seconds, they answer `503` with a short page saying reports are unavailable, or `{"error": "reports are unavailable"}` from the JSON routes, which is never cached. The status page, its notices and the feeds keep working.
 
 #### Admin page
 
