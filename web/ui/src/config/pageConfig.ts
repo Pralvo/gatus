@@ -29,6 +29,11 @@ export interface PageConfig {
   feeds: boolean
   /** Pages the visitor's browser may test on request ("Is it just me?"). https only. */
   browserChecks: PageLink[]
+  /**
+   * Where the monitor runs, as a place: "one location in India" gives "Checks
+   * run from one location in India." on the page. Empty leaves the sentence out.
+   */
+  checksLocation: string
 }
 
 export const defaultPageConfig: PageConfig = {
@@ -47,6 +52,7 @@ export const defaultPageConfig: PageConfig = {
   sourceLink: 'https://github.com/TwiN/gatus',
   feeds: false,
   browserChecks: [],
+  checksLocation: '',
 }
 
 /** Web addresses and paths on this site. Anything else, such as javascript:, is refused. */
@@ -63,6 +69,18 @@ function text(value: unknown, fallback: string): string {
 function linkText(value: unknown, fallback: string): string {
   const candidate = text(value, fallback)
   return candidate === '' || isPageLink(candidate) ? candidate : fallback
+}
+
+/** The longest place name worth showing; anything longer is refused. */
+const maxPlaceLength = 120
+
+/** A short, single-line place, without a closing full stop, or '' when unusable. */
+function place(value: unknown): string {
+  if (typeof value !== 'string') {
+    return ''
+  }
+  const trimmed = value.trim().replace(/\.+$/, '').trim()
+  return trimmed.length > maxPlaceLength || /[\r\n]/.test(trimmed) ? '' : trimmed
 }
 
 function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
@@ -117,6 +135,7 @@ export function parsePageConfig(input: unknown): PageConfig {
     sourceLink: linkText(raw.sourceLink, fallback.sourceLink),
     feeds: raw.feeds === true,
     browserChecks: links(raw.browserChecks).filter((item) => item.link.startsWith('https://')),
+    checksLocation: place(raw.checksLocation),
   }
 }
 

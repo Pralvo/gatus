@@ -91,6 +91,20 @@ describe('parsePageConfig', () => {
     expect(config.logoDark).toBe('')
   })
 
+  it('reads where checks run as a short place, without a closing full stop', () => {
+    expect(parsePageConfig({ checksLocation: ' one location in India. ' }).checksLocation).toBe(
+      'one location in India',
+    )
+    expect(parsePageConfig({}).checksLocation).toBe('')
+  })
+
+  it('leaves out a check location that is not short, single-line text', () => {
+    expect(parsePageConfig({ checksLocation: 42 }).checksLocation).toBe('')
+    expect(parsePageConfig({ checksLocation: 'India\nand more' }).checksLocation).toBe('')
+    expect(parsePageConfig({ checksLocation: 'x'.repeat(121) }).checksLocation).toBe('')
+    expect(parsePageConfig({ checksLocation: '...' }).checksLocation).toBe('')
+  })
+
   it('treats anything but an object as empty', () => {
     expect(parsePageConfig(null)).toEqual(defaultPageConfig)
     expect(parsePageConfig('text')).toEqual(defaultPageConfig)

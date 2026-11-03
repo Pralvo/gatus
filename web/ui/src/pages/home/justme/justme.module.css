@@ -1,0 +1,85 @@
+.running {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.tableBox {
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  font-size: 14px;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 8px 16px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--borderColor-default);
+}
+
+.table thead th {
+  font-weight: 600;
+  background: var(--bgColor-muted);
+}
+
+.table tbody tr:last-child th,
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--fgColor-muted);
+}
+
+/* At phone width each row stacks, each cell led by its column name. */
+@media (max-width: 639px) {
+  .table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table th,
+  .table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .table tbody tr {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--borderColor-default);
+  }
+
+  .table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .table tbody th,
+  .table td {
+    display: flex;
+    gap: 12px;
+    padding: 2px 0;
+    border: 0;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    flex: 0 0 110px;
+    color: var(--fgColor-muted);
+  }
+}

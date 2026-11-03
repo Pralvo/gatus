@@ -1,0 +1,30 @@
+.word {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.word svg {
+  flex: none;
+}
+
+.success {
+  color: var(--fgColor-success);
+}
+
+.attention {
+  color: var(--fgColor-attention);
+}
+
+.severe {
+  color: var(--fgColor-severe);
+}
+
+.danger {
+  color: var(--fgColor-danger);
+}
+
+.neutral {
+  color: var(--fgColor-muted);
+}
