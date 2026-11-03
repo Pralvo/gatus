@@ -1,3 +1,4 @@
+# Changed by Pralvo: ignores the web/ui build output.
 # IDE
 *.iml
 .idea
@@ -19,3 +20,5 @@ node_modules
 gatus
 config/config.yml
 config.yaml
+# Pralvo: web/ui build output; the served copy is generated elsewhere
+web/ui/dist
