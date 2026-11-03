@@ -57,7 +57,7 @@ func (f *feed) atom(w http.ResponseWriter, _ *http.Request) {
 			Title:   e.title,
 			ID:      e.id,
 			Updated: e.time.Format(time.RFC3339),
-			Link:    atomLink{Rel: "alternate", Type: "text/html", Href: f.base + "/"},
+			Link:    atomLink{Rel: "alternate", Type: "text/html", Href: e.link},
 			Content: atomText{Type: "text", Body: e.content},
 		})
 	}
@@ -105,7 +105,7 @@ func (f *feed) rss(w http.ResponseWriter, _ *http.Request) {
 	for _, e := range entries {
 		document.Channel.Items = append(document.Channel.Items, rssItem{
 			Title:       e.title,
-			Link:        f.base + "/",
+			Link:        e.link,
 			GUID:        rssGUID{IsPermaLink: "false", Value: e.id},
 			PubDate:     e.time.Format(time.RFC1123Z),
 			Description: e.content,
@@ -151,7 +151,7 @@ func (f *feed) json(w http.ResponseWriter, _ *http.Request) {
 	for _, e := range f.entries() {
 		document.Items = append(document.Items, jsonItem{
 			ID:            e.id,
-			URL:           f.base + "/",
+			URL:           e.link,
 			Title:         e.title,
 			ContentText:   e.content,
 			DatePublished: e.time.Format(time.RFC3339),

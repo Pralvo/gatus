@@ -28,10 +28,12 @@ A plugin that cannot run never stops the status page. It is logged with a state 
 
 | Plugin | What it does | Needs |
 |---|---|---|
+| `admin-page` | A page at `/admin` for managing incidents and reports with a token | `incidents` to do anything |
 | `database` | A SQL connection for other plugins, separate from Gatus's history store | SQLite file or Postgres server |
 | `feeds` | Publishes notices at `/feed/atom.xml`, `/feed/rss.xml` and `/feed/feed.json` | Nothing |
 | `incidents` | Internal incidents and public reports, with a token API and notices | `database` |
 | `maintenance-windows` | Dated maintenance on the status page, with optional alert silencing | Nothing |
+| `report-pages` | Public pages for published reports at `/reports` and `/reports/{id}` | `incidents` to show reports |
 
 ```yaml
 plugins:
@@ -95,7 +97,7 @@ plugins:
 - An **incident** is internal: title, severity, commander, state, a timeline that only grows, and a Markdown postmortem.
 - A **report** is public: title, stage, affected endpoints with an impact on each, and dated updates. It stays a draft until published.
 
-Published reports appear as notices on the status page. A notice links to `/reports/{id}`, a page this plugin does not serve. Resolved reports stay in the past notices for 30 days. The page reads a copy of the notices that a job refreshes, so a slow or dead database never holds it up. If reads fail, the last good copy stays up.
+Published reports appear as notices on the status page. A notice links to `/reports/{id}`, which the `report-pages` plugin serves, and feed entries made from a report link there too. Resolved reports stay in the past notices for 30 days. The page reads a copy of the notices that a job refreshes, so a slow or dead database never holds it up. If reads fail, the last good copy stays up.
 
 #### Tokens
 
@@ -142,6 +144,35 @@ Errors look like `{"error": "frozen", "message": "..."}`:
 | 413 | `too_large` |
 | 429 | `rate_limited` |
 | 503 | `unavailable`: the database failed |
+
+#### Report pages
+
+```yaml
+plugins:
+  - name: report-pages
+    config:
+      title: Example status   # heads each page; defaults to the page title
+      page-size: 20           # reports per page on the list, 1 to 199; default 20
+```
+
+`/reports` lists published reports, unresolved ones first and then the most recently changed, with `?page=2` and onward for older ones. `/reports/{id}` shows one report: its stage, each affected endpoint with its impact, and every update, newest first. Drafts are never shown, and a draft's address looks the same as one that does not exist.
+
+The pages are plain HTML rendered on the server, with no script, and every stored value is escaped. Times are shown in UTC. They are cached for 30 seconds, so a new update shows within about that long.
+
+The pages want `incidents` rather than needing it, so they stay up without it. If the incidents plugin is not running, or the database fails or takes longer than 3 seconds, they answer `503` with a short page saying reports are unavailable, which is never cached. The status page, its notices and the feeds keep working.
+
+#### Admin page
+
+```yaml
+plugins:
+  - name: admin-page   # no settings
+```
+
+`/admin` is a page for listing, creating and editing incidents and reports, posting updates, and publishing. It asks for a token from the `incidents` configuration and sends it only as `Authorization: Bearer` to the API above, so everything it can do, the token can do with `curl`. The page itself holds nothing secret and grants nothing.
+
+- The token is kept in the tab's `sessionStorage` and is gone when the tab closes. A refused token signs the page out. No cookies are used.
+- The page loads only its own script and stylesheet, under a policy that allows no inline script, no other origin and no framing. Stored text is only ever written into the page as text.
+- The route is public like every plugin route, so put it behind your proxy's access rules if you want fewer people to see it.
 
 #### Build on it
 

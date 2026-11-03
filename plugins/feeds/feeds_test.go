@@ -143,3 +143,30 @@ func TestBadConfigIsRefusedByName(t *testing.T) {
 		})
 	}
 }
+
+func TestEntriesFromReportsLinkToTheReportPage(t *testing.T) {
+	const id = "0123456789abcdef0123456789abcdef"
+	const other = "fedcba9876543210fedcba9876543210"
+	fromReport := "**Identified: Slow**\n\nWorking.\n\n[Read the report](/reports/" + id + ")"
+	imitation := "**Identified: x](/reports/" + other + ")**\n\nWorking."
+	h := plugintest.Start(t, Definition, validConfig, core(note(3, "warning", fromReport), note(2, "warning", imitation), note(1, "none", "Plain")))
+	want := []string{"https://status.example.com/reports/" + id, "https://status.example.com/", "https://status.example.com/"}
+
+	var atom atomFeed
+	if err := xml.Unmarshal(h.Get("/feed/atom.xml").Body.Bytes(), &atom); err != nil {
+		t.Fatal(err)
+	}
+	var rss rssFeed
+	if err := xml.Unmarshal(h.Get("/feed/rss.xml").Body.Bytes(), &rss); err != nil {
+		t.Fatal(err)
+	}
+	var feed jsonFeed
+	if err := json.Unmarshal(h.Get("/feed/feed.json").Body.Bytes(), &feed); err != nil {
+		t.Fatal(err)
+	}
+	for i, link := range want {
+		if atom.Entries[i].Link.Href != link || rss.Channel.Items[i].Link != link || feed.Items[i].URL != link {
+			t.Fatalf("entry %d: atom %q, rss %q, json %q, want %q", i, atom.Entries[i].Link.Href, rss.Channel.Items[i].Link, feed.Items[i].URL, link)
+		}
+	}
+}

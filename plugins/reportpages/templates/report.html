@@ -1,0 +1,12 @@
+{{define "content"}}<h1>{{.Title}}</h1>
+<p><span class="tag {{.Stage.Class}}">{{.Stage.Text}}</span>
+{{with .Resolved}}Resolved <time datetime="{{.Machine}}">{{.Text}}</time>{{else}}Published <time datetime="{{.Published.Machine}}">{{.Published.Text}}</time>{{end}}</p>
+{{with .Endpoints}}<h2>Affected</h2>
+<ul class="endpoints">{{range .}}<li>{{.Name}} <span class="tag {{.Impact.Class}}">{{.Impact.Text}}</span></li>{{end}}</ul>{{end}}
+<h2>Updates</h2>
+<ol class="updates">{{range .Updates}}<li class="card">
+<p><span class="tag {{.Stage.Class}}">{{.Stage.Text}}</span> <time datetime="{{.At.Machine}}">{{.At.Text}}</time></p>
+<p class="text">{{.Message}}</p>
+</li>{{end}}</ol>
+<p><a href="/reports">All reports</a></p>
+{{end}}

@@ -1,0 +1,17 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{{.Title}} · {{.Site}}</title>
+<style>{{.Style}}</style>
+</head>
+<body>
+<header class="top"><a href="/">{{.Site}}</a><a href="/reports">Reports</a></header>
+<main>
+{{template "content" .Body}}
+</main>
+</body>
+</html>
+{{end}}

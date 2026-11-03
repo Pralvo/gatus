@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -83,6 +84,7 @@ type entry struct {
 	id      string
 	title   string
 	content string
+	link    string
 	time    time.Time
 }
 
@@ -97,6 +99,7 @@ func (f *feed) entries() []entry {
 			id:      "tag:" + f.host + "," + notice.Timestamp.UTC().Format("2006-01-02") + ":notice:" + hex.EncodeToString(sum[:8]),
 			title:   titleOf(notice),
 			content: notice.Message,
+			link:    f.base + linkOf(notice.Message),
 			time:    notice.Timestamp.UTC(),
 		})
 	}
@@ -105,6 +108,21 @@ func (f *feed) entries() []entry {
 		entries = entries[:f.config.Limit]
 	}
 	return entries
+}
+
+// reportLink finds the link a notice from the incidents plugin ends with. It
+// must be the very end, because a title or message earlier in the notice is
+// stored text that could imitate one. Only an ID of the form that plugin makes
+// is accepted.
+var reportLink = regexp.MustCompile(`\]\((/reports/[0-9a-f]{32})\)\s*$`)
+
+// linkOf returns the path an entry should link to: the report page when the
+// notice comes from a report, and the status page otherwise.
+func linkOf(message string) string {
+	if match := reportLink.FindStringSubmatch(message); match != nil {
+		return match[1]
+	}
+	return "/"
 }
 
 // updated is when the feed last changed. Formats require it even when empty.
