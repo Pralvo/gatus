@@ -28,3 +28,16 @@ func TestAllMergesNewestFirstAndSourcesCanLeave(t *testing.T) {
 		t.Fatal("All changed the configured list")
 	}
 }
+
+func TestExceptLeavesOutNamedSources(t *testing.T) {
+	removeNamed := AddNamedSource("reports", func() []*announcement.Announcement { return []*announcement.Announcement{at(3, "named")} })
+	defer func() { _ = removeNamed() }()
+	removeOther := AddSource(func() []*announcement.Announcement { return []*announcement.Announcement{at(2, "other")} })
+	defer func() { _ = removeOther() }()
+	if got := Except(nil, "reports"); len(got) != 1 || got[0].Message != "other" {
+		t.Fatalf("got %+v", got)
+	}
+	if got := All(nil); len(got) != 2 {
+		t.Fatalf("All left out a source: %+v", got)
+	}
+}
