@@ -1,4 +1,4 @@
-<!-- Changed by Pralvo: a configured logo has empty alt text, since the header beside it names the page; configured footer links come before "Powered by Gatus". -->
+<!-- Changed by Pralvo: a configured logo has empty alt text, since the header beside it names the page; configured footer links come before "Powered by Gatus", and footer links are lighter on the dark theme so they stay readable. -->
 <template>
   <div id="global" class="bg-background text-foreground">
     <!-- Loading State -->
@@ -102,10 +102,10 @@
           <div class="flex flex-col items-center gap-4">
             <div class="text-sm text-muted-foreground text-center">
               <template v-for="footerLink in footerLinks" :key="footerLink.name">
-                <a :href="footerLink.link" target="_blank" rel="noopener" class="font-medium text-emerald-800 hover:text-emerald-600">{{ footerLink.name }}</a>
+                <a :href="footerLink.link" target="_blank" rel="noopener" class="font-medium text-emerald-800 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300">{{ footerLink.name }}</a>
                 <span aria-hidden="true"> · </span>
               </template>
-              Powered by <a href="https://gatus.io" target="_blank" class="font-medium text-emerald-800 hover:text-emerald-600">Gatus</a>
+              Powered by <a href="https://gatus.io" target="_blank" class="font-medium text-emerald-800 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300">Gatus</a>
             </div>
             <Social :link="sourceLink" />
           </div>
