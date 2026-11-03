@@ -11,6 +11,7 @@ import { colorModeOf, readThemeChoice, saveThemeChoice, type ThemeChoice } from 
 
 import { IncidentDetail } from './incidents/detail/IncidentDetail'
 import { IncidentsPage } from './incidents/IncidentsPage'
+import { ProblemsPage } from './problems/ProblemsPage'
 import { ReportEditor } from './reports/editor/ReportEditor'
 import { ReportsPage } from './reports/ReportsPage'
 import { SessionProvider } from './session/Session'
@@ -54,6 +55,7 @@ export function AdminApp({ queryClient }: AdminAppProps) {
                     <Route path="reports/:id" element={<ReportEditor />} />
                     <Route path="incidents" element={<IncidentsPage />} />
                     <Route path="incidents/:id" element={<IncidentDetail />} />
+                    <Route path="problems" element={<ProblemsPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Route>
                 </Routes>

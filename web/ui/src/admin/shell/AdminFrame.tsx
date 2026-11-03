@@ -18,8 +18,17 @@ export interface AdminFrameProps {
 }
 
 const sections = [
-  { to: '/', label: 'Reports', match: (path: string) => !path.startsWith('/incidents') },
+  {
+    to: '/',
+    label: 'Reports',
+    match: (path: string) => !path.startsWith('/incidents') && !path.startsWith('/problems'),
+  },
   { to: '/incidents', label: 'Incidents', match: (path: string) => path.startsWith('/incidents') },
+  {
+    to: '/problems',
+    label: 'Problem reports',
+    match: (path: string) => path.startsWith('/problems'),
+  },
 ] as const
 
 /** The signed-in pages: a navigation pane, or tabs at narrow widths, beside the page. */

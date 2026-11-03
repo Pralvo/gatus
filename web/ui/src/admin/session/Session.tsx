@@ -8,12 +8,13 @@ import { createContext, use, useCallback, useMemo, useState, type ReactNode } fr
 import { failureMessages, makeSend, type SendOptions } from '../api/client'
 import { incidentCalls } from '../api/incidents'
 import { reportCalls } from '../api/reports'
+import { problemCalls } from '../problems/problemCalls'
 
 import { forgetToken, readToken, saveToken } from './token'
 
 export function createAdminClient(options: SendOptions) {
   const send = makeSend(options)
-  return { ...reportCalls(send), ...incidentCalls(send) }
+  return { ...reportCalls(send), ...incidentCalls(send), ...problemCalls(send) }
 }
 
 export type AdminClient = ReturnType<typeof createAdminClient>
