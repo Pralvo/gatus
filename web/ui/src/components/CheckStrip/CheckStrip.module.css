@@ -1,0 +1,110 @@
+/* The check strip (design spec 4.1 and 10): passed slots 20 px, failed 32 px, empty a 4 px stub. */
+
+.wrap {
+  position: relative;
+}
+
+.strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 32px;
+  border-radius: 4px;
+  cursor: default;
+}
+
+.strip:focus-visible {
+  outline: 2px solid var(--focus-outlineColor);
+  outline-offset: 4px;
+}
+
+.dimmed {
+  opacity: 0.5;
+}
+
+.slot {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 1px;
+}
+
+.passed {
+  height: 20px;
+  background: var(--pralvo-cell-passed);
+}
+
+.failed {
+  height: 32px;
+  background: var(--pralvo-cell-failed);
+}
+
+.none {
+  height: 4px;
+  background: var(--pralvo-cell-none);
+}
+
+.current {
+  box-shadow:
+    0 0 0 2px var(--bgColor-default),
+    0 0 0 4px var(--focus-outlineColor);
+}
+
+.ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--fgColor-muted);
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: clamp(0px, calc(var(--slot-at) - 150px), calc(100% - min(300px, 100%)));
+  z-index: 30;
+  box-sizing: border-box;
+  width: min(300px, 100%);
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 12px;
+  box-shadow: var(--shadow-floating-small);
+}
+
+.popover dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 0;
+}
+
+.popover dt {
+  color: var(--fgColor-muted);
+}
+
+.popover dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.popover p {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .popover {
+    animation: fade 120ms ease-out;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}

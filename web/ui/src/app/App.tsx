@@ -6,6 +6,7 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 
 import { PageConfigContext } from '../config/context'
 import type { PageConfig } from '../config/pageConfig'
+import { HomePage } from '../pages/home/HomePage'
 import { NotFound } from '../pages/NotFound'
 
 import { Layout } from './Layout'
@@ -32,6 +33,7 @@ export function App({ config, queryClient }: AppProps) {
             <BrowserRouter>
               <Routes>
                 <Route element={<Layout theme={theme} onTheme={choose} />}>
+                  <Route index element={<HomePage />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>
