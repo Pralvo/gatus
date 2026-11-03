@@ -122,7 +122,9 @@ describe('the reports list', () => {
     page([open('o1', 50)])
     renderAt('/reports?page=abc')
     expect(await screen.findByRole('link', { name: 'Open o1' })).toBeVisible()
-    expect(fetched()).toEqual(['/api/v1/reports?page=1'])
+    expect(fetched().filter((url) => url.startsWith('/api/v1/reports'))).toEqual([
+      '/api/v1/reports?page=1',
+    ])
   })
 
   it('offers the newest reports from an empty later page', async () => {

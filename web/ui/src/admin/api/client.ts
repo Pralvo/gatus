@@ -93,7 +93,7 @@ export function errorFor(status: number, body: unknown): AdminError {
   }
 }
 
-export type Method = 'GET' | 'POST' | 'PATCH' | 'PUT'
+export type Method = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
 
 /** Sends one request and returns its checked JSON body. */
 export type Send = (method: Method, path: string, body?: unknown) => Promise<unknown>

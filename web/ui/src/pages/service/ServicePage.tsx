@@ -6,6 +6,7 @@ import { PageMessage } from '../../components/PageHead/PageMessage'
 import { usePageArrival } from '../../components/PageHead/usePageArrival'
 import { usePageConfig } from '../../config/context'
 import { utcClock, utcDay } from '../../domain/time/format'
+import { ProblemLink } from '../problem/ProblemLink'
 
 import { ResponseSection } from './chart/ResponseSection'
 import { RecentChecks } from './checks/RecentChecks'
@@ -117,6 +118,7 @@ export function ServicePage() {
         reference={view.reference}
       />
       {past ? null : <BadgeSection serviceKey={view.key} name={service.name} />}
+      {past ? null : <ProblemLink serviceKey={view.key} paragraph />}
     </>
   )
 }

@@ -2,6 +2,7 @@ import { MarkGithubIcon } from '@primer/octicons-react'
 import { Fragment } from 'react'
 
 import { usePageConfig } from '../config/context'
+import { ProblemLink } from '../pages/problem/ProblemLink'
 
 import styles from './layout.module.css'
 
@@ -26,6 +27,7 @@ export function Footer() {
               {separator}
             </Fragment>
           ))}
+          <ProblemLink suffix={separator} />
           Powered by{' '}
           <a href="https://gatus.io" rel="noopener">
             Gatus

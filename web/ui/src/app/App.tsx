@@ -9,6 +9,7 @@ import type { PageConfig } from '../config/pageConfig'
 import { FlowPage } from '../pages/flow/FlowPage'
 import { HomePage } from '../pages/home/HomePage'
 import { NotFound } from '../pages/NotFound'
+import { ProblemPage } from '../pages/problem/ProblemPage'
 import { ReportsPage } from '../pages/reports/list/ReportsPage'
 import { ReportPage } from '../pages/reports/report/ReportPage'
 import { ServicePage } from '../pages/service/ServicePage'
@@ -42,6 +43,7 @@ export function App({ config, queryClient }: AppProps) {
                   <Route path="reports/:id" element={<ReportPage />} />
                   <Route path="endpoints/:key" element={<ServicePage />} />
                   <Route path="suites/:key" element={<FlowPage />} />
+                  <Route path="report-a-problem" element={<ProblemPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>
