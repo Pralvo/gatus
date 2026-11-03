@@ -32,7 +32,7 @@ A plugin that cannot run never stops the status page. It is logged with a state 
 | `database` | A SQL connection for other plugins, separate from Gatus's history store | SQLite file or Postgres server |
 | `feeds` | Publishes notices at `/feed/atom.xml`, `/feed/rss.xml` and `/feed/feed.json` | Nothing |
 | `incidents` | Internal incidents and public reports, with a token API and notices | `database` |
-| `maintenance-windows` | Dated maintenance on the status page, with optional alert silencing | Nothing |
+| `maintenance-windows` | Dated maintenance on the status page and at `/api/v1/maintenance`, with optional alert silencing | Nothing |
 | `report-pages` | Public pages for published reports at `/reports` and `/reports/{id}`, and the same as JSON under `/api/v1/reports` | `incidents` to show reports |
 
 ```yaml
@@ -77,6 +77,8 @@ plugins:
 ```
 
 A window silences alerts and shows a notice. Checks keep running during the window, so a failure still shows red on the page.
+
+`GET /api/v1/maintenance` lists the same windows as data, oldest start first: `{"windows": [{"title", "start", "end", "state", "details", "endpoints": [{"key", "name"}]}]}`, where `state` is `upcoming`, `in-progress` or `finished` and an empty `endpoints` means every endpoint. A window appears only from its announce time, as its notice does, and alert settings are never listed. The list comes from the configuration and the clock, so it needs no database.
 
 ```yaml
 plugins:
