@@ -4,6 +4,7 @@ import {
   chartFrame,
   chartHeight,
   failedBoxes,
+  isolatedPoints,
   linePath,
   xTicks,
   yTicks,
@@ -71,6 +72,15 @@ export function ChartFigure({ model, describedBy }: ChartFigureProps) {
           </g>
         ))}
         <path className={styles.line ?? ''} d={linePath(model, frame)} />
+        {isolatedPoints(model, frame).map((point) => (
+          <circle
+            key={`${String(point.x)}-${String(point.y)}`}
+            className={styles.dot ?? ''}
+            cx={point.x}
+            cy={point.y}
+            r={2.5}
+          />
+        ))}
         {xTicks(model, frame).map((tick) => (
           <text
             key={tick.position}
