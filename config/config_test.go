@@ -2647,3 +2647,25 @@ func TestResolveTunnelForClientConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestParseAndValidateConfigBytesWithPlugins(t *testing.T) {
+	cfg, err := parseAndValidateConfigBytes([]byte(`
+plugins:
+  - name: first
+    config:
+      setting: value
+  - name: second
+    disabled: true
+endpoints:
+  - name: website
+    url: https://twin.sh/health
+    conditions:
+      - "[STATUS] == 200"
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Plugins) != 2 || cfg.Plugins[0].Name != "first" || !cfg.Plugins[1].Disabled || cfg.Plugins[0].Config.IsZero() {
+		t.Fatalf("plugins: %+v", cfg.Plugins)
+	}
+}
