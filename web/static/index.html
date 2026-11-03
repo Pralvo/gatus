@@ -1,11 +1,31 @@
-<!doctype html><html lang="en" class="{{ .Theme }}"><head><meta charset="utf-8"/><script>window.config = {logo: "{{ .UI.Logo }}", header: "{{ .UI.Header }}", dashboardHeading: "{{ .UI.DashboardHeading }}", dashboardSubheading: "{{ .UI.DashboardSubheading }}", link: "{{ .UI.Link }}", buttons: [], maximumNumberOfResults: "{{ .UI.MaximumNumberOfResults }}", defaultSortBy: "{{ .UI.DefaultSortBy }}", defaultFilterBy: "{{ .UI.DefaultFilterBy }}", loginSubtitle: "{{ .UI.LoginSubtitle }}", footerLinks: [], sourceLink: "{{ .UI.SourceLink }}"};{{- range .UI.Buttons}}window.config.buttons.push({name:"{{ .Name }}",link:"{{ .Link }}"});{{end}}{{- range .UI.FooterLinks}}window.config.footerLinks.push({name:"{{ .Name }}",link:"{{ .Link }}"});{{end}}
-      // Initialize theme immediately to prevent flash
-      (function() {
-        const themeFromCookie = document.cookie.match(/theme=(dark|light);?/)?.[1];
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (themeFromCookie === 'dark' || (!themeFromCookie && prefersDark)) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      })();</script><title>{{ .UI.Title }}</title><meta http-equiv="X-UA-Compatible" content="IE=edge"/><meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/><link rel="icon" type="image/png" sizes="32x32" href="{{ .UI.Favicon.Size32x32 }}"/><link rel="icon" type="image/png" sizes="16x16" href="{{ .UI.Favicon.Size16x16 }}"/><link rel="manifest" href="/manifest.json" crossorigin="use-credentials"/><link rel="shortcut icon" href="{{ .UI.Favicon.Default }}"/><link rel="stylesheet" href="/css/custom.css"/><meta name="description" content="{{ .UI.Description }}"/><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/><meta name="apple-mobile-web-app-title" content="{{ .UI.Title }}"/><meta name="application-name" content="{{ .UI.Title }}"/><meta name="theme-color" content="#f7f9fb"/><script defer="defer" src="/js/chunk-vendors.js"></script><script defer="defer" src="/js/app.js"></script><link href="/css/app.css" rel="stylesheet"></head><body><noscript><strong>Enable JavaScript to view this page.</strong></noscript><div id="app"></div></body></html>
+<!doctype html>
+<!-- The server fills the double-brace fields with html/template. In development they stay as text and the page uses its defaults. -->
+<html lang="en" class="{{ .Theme }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>{{ .UI.Title }}</title>
+    <meta name="description" content="{{ .UI.Description }}" />
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ .UI.Favicon.Size32x32 }}" />
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ .UI.Favicon.Size16x16 }}" />
+    <link rel="shortcut icon" href="{{ .UI.Favicon.Default }}" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="/css/custom.css" />
+    <script type="application/json" id="page-config">
+      {{ .PageConfig }}
+    </script>
+    <script type="module" crossorigin src="/assets/main-DK-mrU2W.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-D07ulaRv.js">
+    <link rel="stylesheet" crossorigin href="/assets/theme-BwPQlu76.css">
+    <link rel="stylesheet" crossorigin href="/assets/main-BVcUgHBS.css">
+  </head>
+  <body>
+    <noscript
+      >This page needs JavaScript to show live status. Published reports work without it at
+      /reports.</noscript
+    >
+    <div id="root"></div>
+  </body>
+</html>

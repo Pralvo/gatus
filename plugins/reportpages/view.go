@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TwiN/gatus/v5/config/ui"
 	"github.com/TwiN/gatus/v5/plugins/incidents/record"
+	static "github.com/TwiN/gatus/v5/web"
 )
 
 //go:embed templates
@@ -25,9 +27,26 @@ type renderer struct {
 	style  template.CSS
 	policy string
 	sets   map[string]*template.Template
+	app    *appParts
 }
 
-func newRenderer(site string) (*renderer, error) {
+// appParts let a server-made page become the app when scripts can run: the
+// app's assets, its settings, and its policy. Nil means a plain page only.
+type appParts struct {
+	Assets   static.EntryAssets
+	Settings ui.PageSettings
+	policy   string
+}
+
+// appOf returns the app's parts, or nil when the build has no app script.
+func appOf(cfg *ui.Config, assets static.EntryAssets) *appParts {
+	if cfg == nil || len(assets.Scripts) == 0 {
+		return nil
+	}
+	return &appParts{Assets: assets, Settings: cfg.PageSettings(), policy: cfg.ContentSecurityPolicy()}
+}
+
+func newRenderer(site string, app *appParts) (*renderer, error) {
 	css, err := files.ReadFile("templates/style.css")
 	if err != nil {
 		return nil, err
@@ -46,10 +65,14 @@ func newRenderer(site string) (*renderer, error) {
 	}
 	// The style is inline, so the policy allows exactly its bytes and nothing else.
 	// No script may run and nothing may be loaded.
+	// With the app, the app's own policy applies, and also allows exactly these bytes.
 	sum := sha256.Sum256(css)
-	policy := "default-src 'none'; style-src 'sha256-" + base64.StdEncoding.EncodeToString(sum[:]) +
-		"'; img-src 'none'; base-uri 'none'; form-action 'none'"
-	return &renderer{site: site, style: template.CSS(css), policy: policy, sets: sets}, nil
+	styleHash := "'sha256-" + base64.StdEncoding.EncodeToString(sum[:]) + "'"
+	policy := "default-src 'none'; style-src " + styleHash + "; img-src 'none'; base-uri 'none'; form-action 'none'"
+	if app != nil {
+		policy = strings.Replace(app.policy, "style-src 'self'", "style-src 'self' "+styleHash, 1)
+	}
+	return &renderer{site: site, style: template.CSS(css), policy: policy, sets: sets, app: app}, nil
 }
 
 // frame is what the layout reads. Description feeds the link-preview tags.
@@ -59,10 +82,11 @@ type frame struct {
 	Description string
 	Style       template.CSS
 	Body        any
+	App         *appParts
 }
 
 func (v *renderer) render(out io.Writer, name, title string, body any) error {
-	return v.sets[name].ExecuteTemplate(out, "layout", frame{Site: v.site, Title: title, Description: describe(body), Style: v.style, Body: body})
+	return v.sets[name].ExecuteTemplate(out, "layout", frame{Site: v.site, Title: title, Description: describe(body), Style: v.style, Body: body, App: v.app})
 }
 
 // maxDescription is about what link previews show before cutting text.
@@ -290,11 +314,11 @@ type publicList struct {
 
 func publicOf(report *record.Report, names map[string]string) publicReport {
 	out := publicReport{
-		ID:         report.ID,
-		Title:      report.Title,
-		Stage:      report.Stage,
-		Endpoints:  make([]publicEndpoint, 0, len(report.Endpoints)),
-		Updates:    make([]publicUpdate, 0, len(report.Updates)),
+		ID:        report.ID,
+		Title:     report.Title,
+		Stage:     report.Stage,
+		Endpoints: make([]publicEndpoint, 0, len(report.Endpoints)),
+		Updates:   make([]publicUpdate, 0, len(report.Updates)),
 		UpdatedAt: report.UpdatedAt.UTC(),
 	}
 	if report.ResolvedAt != nil {

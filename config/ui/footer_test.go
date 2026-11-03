@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"html/template"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -61,7 +62,8 @@ func TestConfig_ValidateAndSetDefaults_SourceLink(t *testing.T) {
 	}
 }
 
-// The page template puts footer links into a script, so a hostile name must stay a string.
+// The page template writes the settings into a JSON data block. A hostile name
+// must stay a string inside it.
 func TestFooterLinks_RenderedAsEscapedStrings(t *testing.T) {
 	cfg := &Config{
 		FooterLinks: []Button{{Name: `Pralvo"</script><script>alert(1)</script>`, Link: "https://pralvo.com/"}},
@@ -79,13 +81,16 @@ func TestFooterLinks_RenderedAsEscapedStrings(t *testing.T) {
 		t.Fatal(err)
 	}
 	html := buffer.String()
-	if !strings.Contains(html, "window.config.footerLinks.push({name:") {
-		t.Error("expected the page to pass footer links to the app")
+	if !regexp.MustCompile(`<script type="application/json" id="page-config">\s*\{"header":`).MatchString(html) {
+		t.Error("expected the page to carry its settings in a JSON data block")
 	}
-	if !strings.Contains(html, `sourceLink: "https:\/\/github.com\/Pralvo\/gatus"`) {
+	if !strings.Contains(html, `"sourceLink":"https:\/\/github.com\/Pralvo\/gatus"`) && !strings.Contains(html, `"sourceLink":"https://github.com/Pralvo/gatus"`) {
 		t.Error("expected the page to pass the source link to the app")
 	}
 	if strings.Contains(html, "<script>alert(1)") {
-		t.Error("a footer link name broke out of its string")
+		t.Error("a footer link name broke out of its data block")
+	}
+	if !strings.Contains(html, `class="dark"`) {
+		t.Error("expected the theme class on the page")
 	}
 }

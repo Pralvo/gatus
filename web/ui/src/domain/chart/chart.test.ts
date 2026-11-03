@@ -5,7 +5,15 @@ import { at, event } from '../../test/fixtures'
 import { hourMs } from '../time/format'
 
 import { chartModel, quantile, roundMax } from './chart'
-import { bandBox, chartFrame, failedBoxes, linePath, xTicks, yTicks } from './geometry'
+import {
+  bandBox,
+  chartFrame,
+  failedBoxes,
+  isolatedPoints,
+  linePath,
+  xTicks,
+  yTicks,
+} from './geometry'
 
 /** Hourly averages ending at the hour before minute 60, oldest first. */
 function hourly(values: number[]): ResponseTimeHistory {
@@ -134,6 +142,13 @@ describe('geometry', () => {
     const path = linePath(model, frame)
     expect(path.match(/M/g)).toHaveLength(2)
     expect(path.match(/L/g)).toHaveLength(1)
+  })
+
+  it('marks a point with no neighbour, which the line cannot show', () => {
+    expect(isolatedPoints(model, frame)).toHaveLength(1)
+    const alone = { ...model, points: model.points.slice(0, 1) }
+    expect(isolatedPoints(alone, frame)).toHaveLength(1)
+    expect(isolatedPoints({ ...model, points: [] }, frame)).toEqual([])
   })
 
   it('draws the band and a visible box for a short failure', () => {

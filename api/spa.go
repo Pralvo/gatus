@@ -1,3 +1,5 @@
+// Changed by Pralvo: sends the page's Content-Security-Policy, built from the UI settings.
+
 package api
 
 import (
@@ -11,6 +13,7 @@ import (
 )
 
 func SinglePageApplication(uiConfig *ui.Config) fiber.Handler {
+	policy := uiConfig.ContentSecurityPolicy()
 	return func(c *fiber.Ctx) error {
 		vd := ui.ViewData{UI: uiConfig}
 		{
@@ -18,6 +21,8 @@ func SinglePageApplication(uiConfig *ui.Config) fiber.Handler {
 			if len(themeFromCookie) > 0 {
 				if themeFromCookie == "dark" {
 					vd.Theme = "dark"
+				} else if themeFromCookie == "light" {
+					vd.Theme = "light" // Pralvo: lets the page paint light before the app loads
 				}
 			} else if uiConfig.IsDarkMode() { // Since there's no theme cookie, we'll rely on ui.DarkMode
 				vd.Theme = "dark"
@@ -30,6 +35,9 @@ func SinglePageApplication(uiConfig *ui.Config) fiber.Handler {
 			return c.Status(500).SendString("Failed to parse template. This should never happen, because the template is validated on start.")
 		}
 		c.Set("Content-Type", "text/html")
+		c.Set("Content-Security-Policy", policy)
+		c.Set("X-Content-Type-Options", "nosniff")
+		c.Set("Referrer-Policy", "same-origin")
 		err = t.Execute(c, vd)
 		if err != nil {
 			// This should never happen, because ui.ValidateAndSetDefaults validates that the template works.

@@ -1,6 +1,7 @@
 // Package reportpages serves the published reports of the incidents plugin as
 // public HTML pages: a list at /reports and one page per report at
 // /reports/{id}. The pages are rendered on the server and need no JavaScript.
+// When the build has the app, each page also loads it, and the app takes over.
 //
 // The incidents service is wanted rather than needed, so the pages stay up when
 // it is missing and answer with a plain 503 page instead of disappearing. The
@@ -14,6 +15,7 @@ import (
 	"github.com/TwiN/gatus/v5/config"
 	"github.com/TwiN/gatus/v5/plugin"
 	"github.com/TwiN/gatus/v5/plugins/incidents/record"
+	static "github.com/TwiN/gatus/v5/web"
 )
 
 // incidentsKey is the service the incidents plugin provides. It is written out
@@ -31,6 +33,9 @@ type Config struct {
 // maxPageSize leaves room for the one extra report read to learn whether a
 // further page exists.
 const maxPageSize = record.MaxLimit - 1
+
+// appEntry is a variable so tests can choose whether the build has an app.
+var appEntry = static.Entry
 
 func init() { plugin.Register(Definition) }
 
@@ -62,7 +67,7 @@ var Definition = plugin.Definition{
 		if service == nil {
 			ctx.Logf("the incidents plugin is not running, so report pages answer 503 until it is")
 		}
-		pages, err := newPages(reader(service), cfg, endpointNames(gatusConfig), ctx.Logf)
+		pages, err := newPages(reader(service), cfg, endpointNames(gatusConfig), appOf(gatusConfig.UI, appEntry()), ctx.Logf)
 		if err != nil {
 			return err
 		}

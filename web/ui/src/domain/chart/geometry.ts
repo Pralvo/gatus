@@ -52,6 +52,20 @@ export function linePath(model: ChartModel, frame: Frame): string {
     .join(' ')
 }
 
+/** Points with no neighbour within two hours. A path draws nothing for them, so
+ * the chart marks each with a dot. */
+export function isolatedPoints(model: ChartModel, frame: Frame): { x: number; y: number }[] {
+  const { points } = model
+  const near = (other: ChartModel['points'][number] | undefined, at: number) =>
+    other !== undefined && Math.abs(at - other.at) <= 2 * hourMs
+  return points
+    .filter((point, index) => {
+      const before = index > 0 ? points[index - 1] : undefined
+      return !near(before, point.at) && !near(points[index + 1], point.at)
+    })
+    .map((point) => ({ x: xOf(model, frame, point.at), y: yOf(model, frame, point.ms) }))
+}
+
 export interface Box {
   x: number
   y: number

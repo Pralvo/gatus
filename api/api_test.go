@@ -1,3 +1,5 @@
+// Changed by Pralvo: fetches the React build's own script instead of the Vue files.
+
 package api
 
 import (
@@ -8,6 +10,7 @@ import (
 	"github.com/TwiN/gatus/v5/config"
 	"github.com/TwiN/gatus/v5/config/ui"
 	"github.com/TwiN/gatus/v5/security"
+	static "github.com/TwiN/gatus/v5/web"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -47,26 +50,20 @@ func TestNew(t *testing.T) {
 			ExpectedCode: fiber.StatusOK,
 		},
 		{
-			Name:         "app.js",
-			Path:         "/js/app.js",
+			Name:         "app-script",
+			Path:         static.Entry().Scripts[0],
 			ExpectedCode: fiber.StatusOK,
 		},
 		{
-			Name:         "app.js-gzipped",
-			Path:         "/js/app.js",
+			Name:         "app-script-gzipped",
+			Path:         static.Entry().Scripts[0],
 			ExpectedCode: fiber.StatusOK,
 			Gzip:         true,
 		},
 		{
-			Name:         "chunk-vendors.js",
-			Path:         "/js/chunk-vendors.js",
+			Name:         "app-stylesheet",
+			Path:         static.Entry().Stylesheets[0],
 			ExpectedCode: fiber.StatusOK,
-		},
-		{
-			Name:         "chunk-vendors.js-gzipped",
-			Path:         "/js/chunk-vendors.js",
-			ExpectedCode: fiber.StatusOK,
-			Gzip:         true,
 		},
 		{
 			Name:         "index",

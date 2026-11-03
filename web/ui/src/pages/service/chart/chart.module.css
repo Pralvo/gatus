@@ -35,6 +35,10 @@
   stroke-dasharray: 3 3;
 }
 
+.dot {
+  fill: var(--fgColor-default);
+}
+
 .line {
   fill: none;
   stroke: var(--fgColor-default);

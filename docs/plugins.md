@@ -159,7 +159,7 @@ plugins:
 
 `/reports` lists published reports, unresolved ones first and then the most recently changed, with `?page=2` and onward for older ones. `/reports/{id}` shows one report: its stage, each affected endpoint with its impact, and every update, newest first. Drafts are never shown, and a draft's address looks the same as one that does not exist.
 
-The pages are plain HTML rendered on the server, with no script, and every stored value is escaped. Times are shown in UTC. They are cached for 30 seconds, so a new update shows within about that long.
+The pages are HTML rendered on the server, and every stored value is escaped. They work with no script, so readers without JavaScript and link previews see the report; the page's title and latest update also go into `og:` tags for previews. When the build has the interface from `web/ui`, each page also loads it, and the interface takes over the page. The policy then allows this site's scripts and styles plus the page's own inline style, and nothing inline beyond that. Times are shown in UTC. They are cached for 30 seconds, so a new update shows within about that long.
 
 The same reports are available as JSON for the page's own scripts. `GET /api/v1/reports` returns `{"reports": [...], "page": 1, "more": false}`, each report with its latest update, and takes the same `?page=`. `GET /api/v1/reports/{id}` returns one report with every update, newest first. A report has `id`, `title`, `stage`, `endpoints` (`key`, `name`, `impact`), `updates` (`stage`, `at`, `message`), `publishedAt`, `resolvedAt` when resolved, and `updatedAt`. It never says who wrote a report or an update. A malformed page number is a `400`, a page past the end is an empty list, and a draft or unknown ID is a `404` with `{"error": "report not found"}`.
 
@@ -172,10 +172,10 @@ plugins:
   - name: admin-page   # no settings
 ```
 
-`/admin` is a page for listing, creating and editing incidents and reports, posting updates, and publishing. It asks for a token from the `incidents` configuration and sends it only as `Authorization: Bearer` to the API above, so everything it can do, the token can do with `curl`. The page itself holds nothing secret and grants nothing.
+`/admin` and every address under it, such as `/admin/reports/{id}`, serve the admin entry of the interface in `web/ui`, built into `web/static/admin/index.html`. It lists, creates and edits incidents and reports, posts updates, and publishes, with a preview of the headline visitors will read. If the build has no admin page, the plugin fails by name. It asks for a token from the `incidents` configuration and sends it only as `Authorization: Bearer` to the API above, so everything it can do, the token can do with `curl`. The page itself holds nothing secret and grants nothing.
 
 - The token is kept in the tab's `sessionStorage` and is gone when the tab closes. A refused token signs the page out. No cookies are used.
-- The page loads only its own script and stylesheet, under a policy that allows no inline script, no other origin and no framing. Stored text is only ever written into the page as text.
+- The page loads only this site's own scripts and stylesheets, under a policy that allows no inline script or style, no other origin and no framing. Stored text is only ever written into the page as text.
 - The route is public like every plugin route, so put it behind your proxy's access rules if you want fewer people to see it.
 
 #### Build on it

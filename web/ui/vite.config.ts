@@ -33,8 +33,10 @@ export default defineConfig({
       '/css/custom.css': 'http://localhost:8080',
     },
   },
+  // The build replaces web/static, which Gatus embeds and serves. public/ holds
+  // the icons and manifest, copied as they are.
   build: {
-    outDir: 'dist',
+    outDir: '../static',
     emptyOutDir: true,
     rollupOptions: {
       input: {

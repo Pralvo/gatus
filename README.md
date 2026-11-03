@@ -1,4 +1,4 @@
-> This is Pralvo's fork of [Gatus](https://github.com/TwiN/gatus), under the same Apache-2.0 licence. It is not an official Gatus project. It adds plugins: see [docs/plugins.md](docs/plugins.md).
+> This is Pralvo's fork of [Gatus](https://github.com/TwiN/gatus), under the same Apache-2.0 licence. It is not an official Gatus project. It adds plugins: see [docs/plugins.md](docs/plugins.md). Its interface is a React and TypeScript app built with GitHub's Primer design system, in `web/ui`; `make frontend-build` builds it into `web/static`, which the binary embeds.
 
 [![Gatus](.github/assets/logo-with-dark-text.png)](https://gatus.io)
 

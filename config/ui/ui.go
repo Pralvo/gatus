@@ -1,4 +1,4 @@
-// Changed by Pralvo: adds footer-links, source-link, logo-dark and browser-checks, and the page settings in page.go.
+// Changed by Pralvo: adds footer-links, source-link, logo-dark, browser-checks and checks-location, and the page settings in page.go.
 
 package ui
 
@@ -60,6 +60,7 @@ type Config struct {
 	SourceLink              string   `yaml:"source-link,omitempty"`            // SourceLink is opened by the GitHub icon in the footer
 	LogoDark                string   `yaml:"logo-dark,omitempty"`              // LogoDark replaces Logo on the dark theme
 	BrowserChecks           []Button `yaml:"browser-checks,omitempty"`         // BrowserChecks are pages the visitor's browser may test on request
+	ChecksLocation          string   `yaml:"checks-location,omitempty"`        // ChecksLocation says where checks run from, in words, such as "one location in India"
 	//////////////////////////////////////////////
 	// Non-configurable - used for UI rendering //
 	//////////////////////////////////////////////
@@ -76,8 +77,8 @@ func (cfg *Config) IsDarkMode() bool {
 
 // Button is the configuration for a button on the UI
 type Button struct {
-	Name string `yaml:"name,omitempty"` // Name is the text to display on the button
-	Link string `yaml:"link,omitempty"` // Link to open when the button is clicked.
+	Name string `yaml:"name,omitempty" json:"name"` // Name is the text to display on the button
+	Link string `yaml:"link,omitempty" json:"link"` // Link to open when the button is clicked.
 }
 
 // Validate validates the button configuration

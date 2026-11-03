@@ -10,6 +10,22 @@ body {
   margin: 0;
 }
 
+/* Before the app draws, paint the background the theme will have: the server
+   sets class "dark" or "light" from the theme cookie, else the system decides. */
+html:has(#root:empty) {
+  background: #f5f5f5;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light):has(#root:empty) {
+    background: #1a1d21;
+  }
+}
+
+html.dark:has(#root:empty) {
+  background: #1a1d21;
+}
+
 .pralvo-root {
   min-height: 100vh;
   display: flex;

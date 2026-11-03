@@ -1,4 +1,4 @@
-# Changed by Pralvo: adds the plugin, dev-db and ui targets. See docs/plugins.md.
+# Changed by Pralvo: adds the plugin, dev-db and ui targets, and builds the interface from web/ui. See docs/plugins.md.
 
 BINARY=gatus
 
@@ -51,19 +51,20 @@ docker-build-and-run: docker-build docker-run
 # Front end #
 #############
 
+# The interface is the React app in web/ui. frontend-build writes it into
+# web/static, which Gatus embeds.
 .PHONY: frontend-install
 frontend-install:
-	npm --prefix web/app install
+	npm --prefix web/ui ci
 
 .PHONY: frontend-build
 frontend-build:
-	npm --prefix web/app run build
+	npm --prefix web/ui run build
 
 .PHONY: frontend-dev
 frontend-dev:
-	npm --prefix web/app run serve
+	npm --prefix web/ui run dev
 
-# web/ui is the React interface replacing web/app.
 .PHONY: ui-install
 ui-install:
 	npm --prefix web/ui ci

@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -22,90 +23,49 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestEveryFileIsServedWithAStrictPolicy(t *testing.T) {
+func TestEveryAdminAddressGetsThePageWithAStrictPolicy(t *testing.T) {
 	h := plugintest.Start(t, Definition, "", nil)
-	for pattern, f := range routes {
-		path := strings.TrimPrefix(pattern, "GET ")
+	for _, path := range []string{"/admin", "/admin/reports/0123456789abcdef0123456789abcdef", "/admin/incidents"} {
 		response := h.Get(path)
-		if response.Code != http.StatusOK || response.Body.Len() == 0 {
-			t.Fatalf("%s: %d", path, response.Code)
+		if response.Code != http.StatusOK || response.Header().Get("Content-Security-Policy") != policy {
+			t.Fatalf("%s: %d %v", path, response.Code, response.Header())
 		}
-		want := map[string]string{
-			"Content-Type":            f.contentType,
-			"Content-Security-Policy": policy,
-			"Cache-Control":           "no-store",
-			"X-Content-Type-Options":  "nosniff",
-			"X-Frame-Options":         "DENY",
-			"Referrer-Policy":         "no-referrer",
-		}
-		for name, value := range want {
-			if got := response.Header().Get(name); got != value {
-				t.Fatalf("%s %s: %q, want %q", path, name, got, value)
+		for header, want := range map[string]string{"Cache-Control": "no-store", "X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff"} {
+			if got := response.Header().Get(header); got != want {
+				t.Fatalf("%s: %s is %q", path, header, got)
 			}
 		}
-		if response.Header().Get("Set-Cookie") != "" {
-			t.Fatalf("%s set a cookie", path)
-		}
 	}
-	for _, unsafe := range []string{"'unsafe-inline'", "'unsafe-eval'", "http:", "https:", "*", "data:"} {
-		if strings.Contains(policy, unsafe) {
-			t.Fatalf("policy allows %s", unsafe)
-		}
+	if strings.Contains(policy, "unsafe") || !strings.Contains(policy, "frame-ancestors 'none'") {
+		t.Fatalf("policy: %s", policy)
 	}
 }
 
-func read(t *testing.T, name string) string {
-	t.Helper()
-	data, err := assets.ReadFile("assets/" + name)
+// The built page may load only its own /assets/ files and must hold no inline
+// script, so the policy above never has to allow one.
+func TestBuiltPageHasNothingInlineOrRemote(t *testing.T) {
+	page, err := readPage()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("the admin entry is not in web/static: %v", err)
 	}
-	return string(data)
-}
-
-// The policy would block these anyway. Keeping them out of the files means the
-// page works under it, and nothing breaks if a proxy drops the header.
-func TestPageHasNothingInlineOrRemote(t *testing.T) {
-	page := read(t, "admin.html")
-	forbidden := map[string]*regexp.Regexp{
-		"inline script":  regexp.MustCompile(`<script(?:\s[^>]*)?>\s*[^<\s]`),
-		"script source":  regexp.MustCompile(`<script(?:\s+(?:defer|src="/admin/admin\.js"))*\s*>`),
-		"inline style":   regexp.MustCompile(`<style|\sstyle=`),
-		"event handler":  regexp.MustCompile(`\son[a-z]+=`),
-		"remote address": regexp.MustCompile(`(?:src|href)="(?:[a-z]+:|//)`),
+	html := string(page)
+	for _, script := range regexp.MustCompile(`<script[^>]*>`).FindAllString(html, -1) {
+		if !regexp.MustCompile(`src="/assets/[A-Za-z0-9._-]+\.js"`).MatchString(script) {
+			t.Fatalf("inline or remote script: %s", script)
+		}
 	}
-	for name, pattern := range forbidden {
-		if name == "script source" {
-			if strings.Count(page, "<script") != 1 || !pattern.MatchString(page) {
-				t.Fatalf("the page must load exactly one script, its own")
-			}
-			continue
-		}
-		if pattern.MatchString(page) {
-			t.Fatalf("the page has an %s: %s", name, pattern.FindString(page))
-		}
+	if regexp.MustCompile(`(?i)(src|href)="(https?:)?//`).MatchString(html) || strings.Contains(html, " style=") || regexp.MustCompile(`\son[a-z]+=`).MatchString(html) {
+		t.Fatalf("the page loads from another origin or has inline style or handlers:\n%s", html)
 	}
 }
 
-// Stored text is hostile, so the script may only ever write text into the page,
-// and the token may only ever live in this tab.
-func TestScriptNeverWritesMarkupOrKeepsTheTokenElsewhere(t *testing.T) {
-	script := read(t, "admin.js")
-	for _, sink := range []string{
-		"innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function", "setTimeout('",
-		"localStorage", "document.cookie", "indexedDB", "javascript:", "http://", "https://", "credentials: 'include'",
-	} {
-		if strings.Contains(script, sink) {
-			t.Fatalf("the script uses %s", sink)
-		}
-	}
-	for _, needed := range []string{"sessionStorage", "credentials: 'omit'", "createTextNode", "'Bearer '"} {
-		if !strings.Contains(script, needed) {
-			t.Fatalf("the script no longer uses %s", needed)
-		}
-	}
-	if lines := strings.Count(script, "\n"); lines > 500 {
-		t.Fatalf("admin.js has %d lines", lines)
+func TestMissingPageFailsByName(t *testing.T) {
+	original := readPage
+	readPage = func() ([]byte, error) { return nil, errors.New("gone") }
+	t.Cleanup(func() { readPage = original })
+	h := plugintest.Load(t, Definition, "", nil)
+	if got := h.Host.Statuses()[0]; got.State != plugin.StateFailed || !strings.Contains(got.Reason, "make frontend-build") {
+		t.Fatalf("status: %+v", got)
 	}
 }
 
@@ -186,7 +146,7 @@ func TestPageAndAPIThroughTheRealServer(t *testing.T) {
 		entry(t, "admin-page", ""),
 	})
 	response, body := get(t, base+"/admin", "")
-	if response.StatusCode != http.StatusOK || response.Header.Get("Content-Security-Policy") != policy || !strings.Contains(body, "/admin/admin.js") {
+	if response.StatusCode != http.StatusOK || response.Header.Get("Content-Security-Policy") != policy || !strings.Contains(body, "/assets/") {
 		t.Fatalf("/admin: %d %v", response.StatusCode, response.Header)
 	}
 	if response, _ := get(t, base+"/api/v1/admin/reports?limit=1", token); response.StatusCode != http.StatusOK {

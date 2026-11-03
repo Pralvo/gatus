@@ -42,8 +42,8 @@ type pages struct {
 	failing  atomic.Bool
 }
 
-func newPages(reports reportReader, cfg Config, names map[string]string, logf func(format string, args ...any)) (*pages, error) {
-	view, err := newRenderer(cfg.Title)
+func newPages(reports reportReader, cfg Config, names map[string]string, app *appParts, logf func(format string, args ...any)) (*pages, error) {
+	view, err := newRenderer(cfg.Title, app)
 	if err != nil {
 		return nil, err
 	}
