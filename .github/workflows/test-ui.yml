@@ -1,4 +1,4 @@
-# Changed by Pralvo: adds the ui-check job for web/ui.
+# Changed by Pralvo: checks the React interface in web/ui instead of the Vue one.
 name: test-ui
 on:
   pull_request:
@@ -10,13 +10,6 @@ on:
     paths:
       - 'web/**'
 jobs:
-  test-ui:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - run: make frontend-install
-      - run: make frontend-build
   ui-check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -29,3 +22,9 @@ jobs:
           cache-dependency-path: web/ui/package-lock.json
       - run: make ui-install
       - run: make ui-check
+      # make ui-check rebuilds web/static, so any difference means the committed
+      # build is out of date with web/ui.
+      - name: Committed build is current
+        run: |
+          git add -N web/static
+          git diff --exit-code --stat -- web/static

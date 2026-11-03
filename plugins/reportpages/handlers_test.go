@@ -17,6 +17,7 @@ import (
 	"github.com/TwiN/gatus/v5/plugin"
 	"github.com/TwiN/gatus/v5/plugin/plugintest"
 	"github.com/TwiN/gatus/v5/plugins/incidents/record"
+	static "github.com/TwiN/gatus/v5/web"
 )
 
 const hostile = `<script>alert(1)</script>"'&`
@@ -99,9 +100,18 @@ func core() map[plugin.Key]any {
 	}}
 }
 
+// start runs the plugin as a build without the app, so pages are plain HTML.
 func start(t *testing.T, service *fake, configYAML string) *plugintest.Harness {
 	t.Helper()
+	withEntry(t, static.EntryAssets{})
 	return plugintest.Start(t, Definition, configYAML, core(), provider(service))
+}
+
+func withEntry(t *testing.T, assets static.EntryAssets) {
+	t.Helper()
+	original := appEntry
+	appEntry = func() static.EntryAssets { return assets }
+	t.Cleanup(func() { appEntry = original })
 }
 
 func TestStoredTextIsEscapedEverywhere(t *testing.T) {
@@ -355,5 +365,30 @@ func TestAPIDatabaseFailureGivesAnUncached503(t *testing.T) {
 			response.Header().Get("Retry-After") != "30" || strings.Contains(response.Body.String(), "connection refused") {
 			t.Fatalf("%s: %d %v %s", path, response.Code, response.Header(), response.Body)
 		}
+	}
+}
+
+// With the app in the build, each page also loads it, carries the page settings
+// for it, and sends the app's policy plus this page's own style.
+func TestPagesLoadTheAppWhenTheBuildHasIt(t *testing.T) {
+	report := published("Slow reads", record.StageIdentified)
+	withEntry(t, static.EntryAssets{Scripts: []string{"/assets/index-a1.js"}, Stylesheets: []string{"/assets/index-b2.css"}})
+	h := plugintest.Start(t, Definition, "", core(), provider(&fake{reports: []*record.Report{report}}))
+	response := h.Get("/reports/" + report.ID)
+	body := response.Body.String()
+	for _, want := range []string{
+		`<script type="module" crossorigin src="/assets/index-a1.js"></script>`,
+		`<link rel="stylesheet" crossorigin href="/assets/index-b2.css">`,
+		`<script type="application/json" id="page-config">{`,
+		`<div id="root"><div class="plain">`,
+		"Slow reads",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in:\n%s", want, body)
+		}
+	}
+	policy := response.Header().Get("Content-Security-Policy")
+	if !strings.Contains(policy, "script-src 'self';") || !strings.Contains(policy, "style-src 'self' 'sha256-") || strings.Contains(policy, "unsafe") {
+		t.Fatalf("policy: %s", policy)
 	}
 }

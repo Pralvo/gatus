@@ -29,6 +29,9 @@ func TestValidateAndSetDefaults_LogoDarkAndBrowserChecks(t *testing.T) {
 		{name: "check-with-credentials", cfg: Config{BrowserChecks: []Button{{Name: "Home", Link: "https://user:pass@pralvo.com/"}}}, expectedErr: ErrInvalidBrowserCheck},
 		{name: "check-without-name", cfg: Config{BrowserChecks: []Button{{Name: " ", Link: "https://pralvo.com/"}}}, expectedErr: ErrInvalidBrowserCheck},
 		{name: "too-many-checks", cfg: Config{BrowserChecks: six}, expectedErr: ErrInvalidBrowserCheck},
+		{name: "location", cfg: Config{ChecksLocation: "one location in India"}},
+		{name: "location-two-lines", cfg: Config{ChecksLocation: "India\nand more"}, expectedErr: ErrInvalidChecksLocation},
+		{name: "location-too-long", cfg: Config{ChecksLocation: strings.Repeat("a", 121)}, expectedErr: ErrInvalidChecksLocation},
 	}
 	for _, scenario := range scenarios {
 		t.Run(scenario.name, func(t *testing.T) {
@@ -46,7 +49,7 @@ func TestPageSettingsListsAreNeverNull(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, field := range []string{`"buttons":[]`, `"footerLinks":[]`, `"browserChecks":[]`, `"feeds":false`, `"sourceLink":"https://github.com/TwiN/gatus"`} {
+	for _, field := range []string{`"buttons":[]`, `"footerLinks":[]`, `"browserChecks":[]`, `"feeds":false`, `"sourceLink":"https://github.com/TwiN/gatus"`, `"checksLocation":""`} {
 		if !strings.Contains(string(out), field) {
 			t.Errorf("missing %s in %s", field, out)
 		}
@@ -85,5 +88,32 @@ func TestPageConfigIsEscapedInsideItsDataBlock(t *testing.T) {
 	}
 	if settings.Header != cfg.Header {
 		t.Fatalf("header %q came back as %q", cfg.Header, settings.Header)
+	}
+}
+
+func TestContentSecurityPolicyAllowsOnlyWhatThePageUses(t *testing.T) {
+	cfg := Config{
+		Logo:          "https://status.pralvo.com/pralvo-mark.svg",
+		LogoDark:      "/pralvo-mark-dark.svg",
+		BrowserChecks: []Button{{Name: "pralvo.com", Link: "https://pralvo.com/"}, {Name: "Images", Link: "https://media.pralvo.com/"}},
+	}
+	policy := cfg.ContentSecurityPolicy()
+	for _, want := range []string{
+		"script-src 'self';",
+		"style-src 'self';",
+		"img-src 'self' data: https://status.pralvo.com;",
+		"connect-src 'self' https://pralvo.com https://media.pralvo.com;",
+		"frame-ancestors 'none'",
+		"object-src 'none'",
+	} {
+		if !strings.Contains(policy, want) {
+			t.Errorf("missing %q in %s", want, policy)
+		}
+	}
+	if strings.Contains(policy, "unsafe") {
+		t.Errorf("the policy allows unsafe sources: %s", policy)
+	}
+	if got := (&Config{}).ContentSecurityPolicy(); !strings.Contains(got, "connect-src 'self';") || !strings.Contains(got, "img-src 'self' data:;") {
+		t.Errorf("default policy: %s", got)
 	}
 }

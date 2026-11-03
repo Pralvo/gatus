@@ -11,12 +11,17 @@
 <meta property="og:site_name" content="{{.Site}}">
 <meta property="og:type" content="article">
 <style>{{.Style}}</style>
-</head>
+{{with .App}}{{range .Assets.Stylesheets}}<link rel="stylesheet" crossorigin href="{{.}}">
+{{end}}<script type="application/json" id="page-config">{{.Settings}}</script>
+{{range .Assets.Scripts}}<script type="module" crossorigin src="{{.}}"></script>
+{{end}}{{end}}</head>
 <body>
+<div id="root"><div class="plain">
 <header class="top"><a href="/">{{.Site}}</a><a href="/reports">Reports</a></header>
 <main>
 {{template "content" .Body}}
 </main>
+</div></div>
 </body>
 </html>
 {{end}}

@@ -1,3 +1,5 @@
+// Changed by Pralvo: checks the files of the React build from web/ui.
+
 package static
 
 import (
@@ -23,29 +25,31 @@ func TestEmbed(t *testing.T) {
 			expectedContainString: "", // not checking because it's an image
 		},
 		{
-			path:                  "img/logo.svg",
+			path:                  "admin/index.html",
 			shouldExist:           true,
-			expectedContainString: "</svg>",
+			expectedContainString: "</body>",
 		},
 		{
-			path:                  "css/app.css",
+			path:                  "manifest.json",
 			shouldExist:           true,
-			expectedContainString: "background-color",
-		},
-		{
-			path:                  "js/app.js",
-			shouldExist:           true,
-			expectedContainString: "function",
-		},
-		{
-			path:                  "js/chunk-vendors.js",
-			shouldExist:           true,
-			expectedContainString: "function",
+			expectedContainString: "icons",
 		},
 		{
 			path:        "file-that-does-not-exist.html",
 			shouldExist: false,
 		},
+	}
+	// The page's own script and stylesheets, whose names change with each build.
+	entry := Entry()
+	if len(entry.Scripts) == 0 || len(entry.Stylesheets) == 0 {
+		t.Fatalf("the built page names no script or stylesheet: %+v", entry)
+	}
+	for _, asset := range append(entry.Scripts, entry.Stylesheets...) {
+		scenarios = append(scenarios, struct {
+			path                  string
+			shouldExist           bool
+			expectedContainString string
+		}{path: strings.TrimPrefix(asset, "/"), shouldExist: true})
 	}
 	staticFileSystem, err := fs.Sub(FileSystem, RootPath)
 	if err != nil {
