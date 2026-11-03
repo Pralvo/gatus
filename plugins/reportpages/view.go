@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"html/template"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/TwiN/gatus/v5/plugins/incidents/record"
@@ -51,16 +52,51 @@ func newRenderer(site string) (*renderer, error) {
 	return &renderer{site: site, style: template.CSS(css), policy: policy, sets: sets}, nil
 }
 
-// frame is what the layout reads.
+// frame is what the layout reads. Description feeds the link-preview tags.
 type frame struct {
-	Site  string
-	Title string
-	Style template.CSS
-	Body  any
+	Site        string
+	Title       string
+	Description string
+	Style       template.CSS
+	Body        any
 }
 
 func (v *renderer) render(out io.Writer, name, title string, body any) error {
-	return v.sets[name].ExecuteTemplate(out, "layout", frame{Site: v.site, Title: title, Style: v.style, Body: body})
+	return v.sets[name].ExecuteTemplate(out, "layout", frame{Site: v.site, Title: title, Description: describe(body), Style: v.style, Body: body})
+}
+
+// maxDescription is about what link previews show before cutting text.
+const maxDescription = 200
+
+// describe gives a page's one-line summary for link previews: a report's stage
+// and latest update, or what a list or message page is.
+func describe(body any) string {
+	switch view := body.(type) {
+	case reportView:
+		if len(view.Updates) == 0 {
+			return view.Stage.Text
+		}
+		return shorten(view.Stage.Text + ": " + view.Updates[0].Message)
+	case listView:
+		return "Published reports, unresolved first."
+	case message:
+		return shorten(view.Text)
+	}
+	return ""
+}
+
+// shorten cuts text to maxDescription characters at a word boundary, on one line.
+func shorten(text string) string {
+	text = strings.Join(strings.Fields(text), " ")
+	runes := []rune(text)
+	if len(runes) <= maxDescription {
+		return text
+	}
+	cut := string(runes[:maxDescription])
+	if i := strings.LastIndex(cut, " "); i > maxDescription/2 {
+		cut = cut[:i]
+	}
+	return cut + "…"
 }
 
 // message is the body of a page that only says one thing.

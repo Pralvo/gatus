@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>{{.Title}} · {{.Site}}</title>
+{{with .Description}}<meta name="description" content="{{.}}">
+<meta property="og:description" content="{{.}}">
+{{end}}<meta property="og:title" content="{{.Title}}">
+<meta property="og:site_name" content="{{.Site}}">
+<meta property="og:type" content="article">
 <style>{{.Style}}</style>
 </head>
 <body>

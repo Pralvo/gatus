@@ -1,4 +1,4 @@
-// Changed by Pralvo: adds the plugins list. See docs/plugins.md.
+// Changed by Pralvo: adds the plugins list, and tells the page when the feeds plugin runs. See docs/plugins.md.
 
 package config
 
@@ -463,6 +463,12 @@ func ValidateUIConfig(config *Config) error {
 	} else {
 		if err := config.UI.ValidateAndSetDefaults(); err != nil {
 			return err
+		}
+	}
+	// Pralvo: the page links to the feeds only when the feeds plugin runs.
+	for _, entry := range config.Plugins {
+		if entry != nil && entry.Name == "feeds" && !entry.Disabled {
+			config.UI.Feeds = true
 		}
 	}
 	return nil
