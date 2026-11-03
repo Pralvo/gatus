@@ -186,3 +186,25 @@ func TestThroughTheRealServerOnSQLite(t *testing.T) {
 		t.Fatalf("unknown report: %d", response.StatusCode)
 	}
 }
+
+func TestReportPageHasLinkPreviewTags(t *testing.T) {
+	report := published("Slow reads", record.StageMonitoring)
+	report.Updates[1].Message = hostile + " " + strings.Repeat("word ", 60)
+	h := start(t, &fake{reports: []*record.Report{report}}, "")
+	body := h.Get("/reports/" + report.ID).Body.String()
+	for _, want := range []string{
+		`<meta property="og:title" content="Slow reads">`,
+		`<meta property="og:site_name" content="Example status">`,
+		`<meta property="og:description" content="Monitoring: &lt;script&gt;alert(1)&lt;/script&gt;&#34;&#39;&amp; word`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in:\n%s", want, body)
+		}
+	}
+	if strings.Contains(body, "<script>alert") {
+		t.Fatal("stored text reached a tag unescaped")
+	}
+	if got := shorten(strings.Repeat("word ", 60)); len([]rune(got)) > maxDescription+1 || !strings.HasSuffix(got, "…") {
+		t.Fatalf("not shortened: %q", got)
+	}
+}

@@ -1,4 +1,4 @@
-// Changed by Pralvo: adds footer-links and source-link for the page footer.
+// Changed by Pralvo: adds footer-links, source-link, logo-dark and browser-checks, and the page settings in page.go.
 
 package ui
 
@@ -58,10 +58,13 @@ type Config struct {
 	LoginSubtitle           string   `yaml:"login-subtitle,omitempty"`         // LoginSubtitle is the subtitle displayed on the OIDC login page
 	FooterLinks             []Button `yaml:"footer-links,omitempty"`           // FooterLinks are shown in the footer, before "Powered by Gatus"
 	SourceLink              string   `yaml:"source-link,omitempty"`            // SourceLink is opened by the GitHub icon in the footer
+	LogoDark                string   `yaml:"logo-dark,omitempty"`              // LogoDark replaces Logo on the dark theme
+	BrowserChecks           []Button `yaml:"browser-checks,omitempty"`         // BrowserChecks are pages the visitor's browser may test on request
 	//////////////////////////////////////////////
 	// Non-configurable - used for UI rendering //
 	//////////////////////////////////////////////
 	MaximumNumberOfResults int `yaml:"-"` // MaximumNumberOfResults to display on the page, it's not configurable because we're passing it from the storage config
+	Feeds                  bool `yaml:"-"` // Feeds is set when the feeds plugin runs, so the page links to it
 }
 
 func (cfg *Config) IsDarkMode() bool {
@@ -181,6 +184,9 @@ func (cfg *Config) ValidateAndSetDefaults() error {
 		cfg.SourceLink = defaultSourceLink
 	} else if !isPageLink(cfg.SourceLink) {
 		return ErrInvalidSourceLink
+	}
+	if err := cfg.validatePageSettings(); err != nil {
+		return err
 	}
 	// Validate that the template works
 	t, err := template.ParseFS(static.FileSystem, static.IndexPath)

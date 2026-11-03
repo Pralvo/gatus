@@ -63,6 +63,17 @@ describe('parsePageConfig', () => {
     expect(config.footerLinks).toEqual([{ name: 'Reports', link: '/reports' }])
   })
 
+  it('keeps only https pages for browser checks', () => {
+    const config = parsePageConfig({
+      browserChecks: [
+        { name: 'pralvo.com', link: 'https://pralvo.com/' },
+        { name: 'Plain', link: 'http://pralvo.com/' },
+        { name: 'Path', link: '/' },
+      ],
+    })
+    expect(config.browserChecks).toEqual([{ name: 'pralvo.com', link: 'https://pralvo.com/' }])
+  })
+
   it('refuses values outside the allowed sets', () => {
     const config = parsePageConfig({
       defaultSortBy: 'random',

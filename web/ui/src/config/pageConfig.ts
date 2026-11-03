@@ -27,6 +27,8 @@ export interface PageConfig {
   sourceLink: string
   /** Whether the feeds plugin serves /feed/atom.xml, /feed/rss.xml and /feed/feed.json. */
   feeds: boolean
+  /** Pages the visitor's browser may test on request ("Is it just me?"). https only. */
+  browserChecks: PageLink[]
 }
 
 export const defaultPageConfig: PageConfig = {
@@ -44,6 +46,7 @@ export const defaultPageConfig: PageConfig = {
   footerLinks: [],
   sourceLink: 'https://github.com/TwiN/gatus',
   feeds: false,
+  browserChecks: [],
 }
 
 /** Web addresses and paths on this site. Anything else, such as javascript:, is refused. */
@@ -113,6 +116,7 @@ export function parsePageConfig(input: unknown): PageConfig {
     footerLinks: links(raw.footerLinks),
     sourceLink: linkText(raw.sourceLink, fallback.sourceLink),
     feeds: raw.feeds === true,
+    browserChecks: links(raw.browserChecks).filter((item) => item.link.startsWith('https://')),
   }
 }
 
