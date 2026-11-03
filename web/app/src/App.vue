@@ -1,3 +1,4 @@
+<!-- Changed by Pralvo: a configured logo has empty alt text, since the header beside it names the page. -->
 <template>
   <div id="global" class="bg-background text-foreground">
     <!-- Loading State -->
@@ -23,7 +24,7 @@
                   <img 
                     v-if="logo" 
                     :src="logo" 
-                    alt="Gatus" 
+                    alt="" 
                     class="w-full h-full object-contain"
                   />
                   <img 
