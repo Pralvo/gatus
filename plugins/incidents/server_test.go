@@ -50,7 +50,9 @@ func serve(t *testing.T, databaseType, path string) string {
 	}
 	router := api.New(cfg).Router()
 	go func() { _ = router.Listener(listener) }()
-	t.Cleanup(func() { _ = router.Shutdown() })
+	// Closing the listener stops the server. Shutdown is avoided because fasthttp
+	// races with request contexts that are still being watched when it runs.
+	t.Cleanup(func() { _ = listener.Close() })
 	return "http://" + listener.Addr().String()
 }
 
