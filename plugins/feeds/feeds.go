@@ -15,6 +15,7 @@ import (
 	"github.com/TwiN/gatus/v5/config"
 	"github.com/TwiN/gatus/v5/config/announcement"
 	"github.com/TwiN/gatus/v5/plugin"
+	"github.com/TwiN/gatus/v5/plugin/notice"
 )
 
 // maxTitleLength keeps a title readable in a feed reader. It counts characters.
@@ -59,7 +60,7 @@ var Definition = plugin.Definition{
 			base:    strings.TrimRight(base.String(), "/"),
 			host:    base.Hostname(),
 			started: time.Now().UTC(),
-			notices: func() []*announcement.Announcement { return gatusConfig.Announcements },
+			notices: func() []*announcement.Announcement { return notice.All(gatusConfig.Announcements) },
 		}
 		ctx.HandleFunc("GET /feed/atom.xml", f.atom)
 		ctx.HandleFunc("GET /feed/rss.xml", f.rss)

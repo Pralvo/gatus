@@ -1,3 +1,5 @@
+// Changed by Pralvo: serves notices added by plugins.
+
 package api
 
 import (
@@ -5,6 +7,8 @@ import (
 	"fmt"
 
 	"github.com/TwiN/gatus/v5/config"
+	"github.com/TwiN/gatus/v5/config/announcement"
+	"github.com/TwiN/gatus/v5/plugin/notice"
 	"github.com/TwiN/gatus/v5/security"
 	"github.com/TwiN/logr"
 	"github.com/gofiber/fiber/v2"
@@ -30,8 +34,12 @@ func (handler ConfigHandler) GetConfig(c *fiber.Ctx) error {
 		"authenticated": isAuthenticated,
 	}
 	// Add announcements if available, otherwise use empty slice
-	if handler.config != nil && handler.config.Announcements != nil && len(handler.config.Announcements) > 0 {
-		response["announcements"] = handler.config.Announcements
+	var configured []*announcement.Announcement
+	if handler.config != nil {
+		configured = handler.config.Announcements
+	}
+	if announcements := notice.All(configured); len(announcements) > 0 {
+		response["announcements"] = announcements
 	} else {
 		response["announcements"] = []interface{}{}
 	}

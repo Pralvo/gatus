@@ -29,6 +29,7 @@ A plugin that cannot run never stops the status page. It is logged with a state 
 | Plugin | What it does | Needs |
 |---|---|---|
 | `feeds` | Publishes notices at `/feed/atom.xml`, `/feed/rss.xml` and `/feed/feed.json` | Nothing |
+| `maintenance-windows` | Dated maintenance on the status page, with optional alert silencing | Nothing |
 
 ```yaml
 plugins:
@@ -38,6 +39,22 @@ plugins:
       title: Example status                # defaults to the page title
       limit: 50                            # default 50
 ```
+
+```yaml
+plugins:
+  - name: maintenance-windows
+    config:
+      windows:
+        - title: Database upgrade
+          start: 2026-12-06T02:00:00Z
+          end: 2026-12-06T03:00:00Z
+          details: Reads stay available.  # shown in the notice
+          endpoints: [core/database]      # "group/name" or "name"; empty means all
+          silence-alerts: true            # default true
+          announce-before: 72h            # default 0
+```
+
+A window silences alerts and shows a notice. Checks keep running during the window, so a failure still shows red on the page.
 
 ## Write a plugin
 
