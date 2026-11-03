@@ -1,0 +1,18 @@
+/* The sign-in box: one column, readable at 360 px. */
+
+.box {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px;
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 12px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 16px;
+}

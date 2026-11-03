@@ -1,0 +1,82 @@
+/* The incidents list and detail. */
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.caption {
+  margin: 4px 0 12px;
+  color: var(--fgColor-muted);
+  font-size: 12px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fgColor-muted);
+}
+
+.problem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fgColor-danger);
+}
+
+.back {
+  margin: 0 0 8px;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0 0 4px;
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 768px;
+  margin-top: 16px;
+}
+
+.h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.h2:focus {
+  outline: none;
+}
+
+.h2:focus-visible {
+  outline: 2px solid var(--focus-outlineColor);
+  outline-offset: 2px;
+}
+
+.moves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.note {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
