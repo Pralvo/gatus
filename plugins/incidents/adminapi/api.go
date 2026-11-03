@@ -26,24 +26,19 @@ const (
 
 // API serves the routes. Create it with New.
 type API struct {
-	service        record.Service
-	tokens         []token
-	trustedProxies int
-	limiter        *limiter
-	logf           func(format string, args ...any)
+	service record.Service
+	gate    *Gate
+	logf    func(format string, args ...any)
 }
 
 // New validates the tokens and returns an API. now is the clock for rate limits,
 // and logf receives failures that are not shown to clients.
 func New(service record.Service, tokens []Token, trustedProxies int, now func() time.Time, logf func(format string, args ...any)) (*API, error) {
-	parsed, err := parseTokens(tokens)
+	gate, err := NewGate(tokens, trustedProxies, now)
 	if err != nil {
 		return nil, err
 	}
-	if trustedProxies < 0 {
-		return nil, errors.New("trusted-proxies cannot be negative")
-	}
-	return &API{service: service, tokens: parsed, trustedProxies: trustedProxies, limiter: newLimiter(now), logf: logf}, nil
+	return &API{service: service, gate: gate, logf: logf}, nil
 }
 
 // handler does one operation for an authenticated actor, and returns the status
@@ -74,20 +69,8 @@ func (a *API) Register(add func(pattern string, handler http.HandlerFunc)) {
 // guard is the one way into a handler: rate limit, then token, then body limit.
 func (a *API) guard(h handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		header := w.Header()
-		header.Set("X-Content-Type-Options", "nosniff")
-		header.Set("Cache-Control", "no-store") // a proxy must never keep these
-		client := a.clientAddress(r)
-		if wait := a.limiter.wait(client); wait > 0 {
-			header.Set("Retry-After", strconv.Itoa(int(wait.Round(time.Second).Seconds())+1))
-			writeError(w, http.StatusTooManyRequests, "rate_limited", "too many failed attempts")
-			return
-		}
-		actor, ok := a.authenticate(r)
+		actor, ok := a.gate.Admit(w, r)
 		if !ok {
-			a.limiter.fail(client)
-			header.Set("WWW-Authenticate", "Bearer")
-			writeError(w, http.StatusUnauthorized, "unauthorized", "a valid bearer token is required")
 			return
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), requestTimeout)

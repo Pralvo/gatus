@@ -4,11 +4,13 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"net/netip"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -51,9 +53,52 @@ func parseTokens(tokens []Token) ([]token, error) {
 	return parsed, nil
 }
 
+// Gate checks bearer tokens and limits failed attempts per client. Other
+// plugins' token APIs use it, so a token works the same way on every route.
+type Gate struct {
+	tokens         []token
+	trustedProxies int
+	limiter        *limiter
+}
+
+// NewGate validates the tokens. trustedProxies says where to find the client's
+// address, and now is the clock for the failure limit.
+func NewGate(tokens []Token, trustedProxies int, now func() time.Time) (*Gate, error) {
+	parsed, err := parseTokens(tokens)
+	if err != nil {
+		return nil, err
+	}
+	if trustedProxies < 0 {
+		return nil, errors.New("trusted-proxies cannot be negative")
+	}
+	return &Gate{tokens: parsed, trustedProxies: trustedProxies, limiter: newLimiter(now)}, nil
+}
+
+// Admit returns the actor for a request with a valid token. Otherwise it writes
+// a 429 or 401 answer and returns false, and the caller writes nothing more.
+func (g *Gate) Admit(w http.ResponseWriter, r *http.Request) (string, bool) {
+	header := w.Header()
+	header.Set("X-Content-Type-Options", "nosniff")
+	header.Set("Cache-Control", "no-store") // a proxy must never keep these
+	client := ClientAddress(r, g.trustedProxies)
+	if wait := g.limiter.wait(client); wait > 0 {
+		header.Set("Retry-After", strconv.Itoa(int(wait.Round(time.Second).Seconds())+1))
+		writeError(w, http.StatusTooManyRequests, "rate_limited", "too many failed attempts")
+		return "", false
+	}
+	actor, ok := g.authenticate(r)
+	if !ok {
+		g.limiter.fail(client)
+		header.Set("WWW-Authenticate", "Bearer")
+		writeError(w, http.StatusUnauthorized, "unauthorized", "a valid bearer token is required")
+		return "", false
+	}
+	return actor, true
+}
+
 // authenticate returns the actor for a valid bearer token. It compares against
 // every token each time, so timing says nothing about which one came close.
-func (a *API) authenticate(r *http.Request) (string, bool) {
+func (g *Gate) authenticate(r *http.Request) (string, bool) {
 	scheme, presented, found := strings.Cut(r.Header.Get("Authorization"), " ")
 	if !found || !strings.EqualFold(scheme, "Bearer") || presented == "" {
 		return "", false
@@ -61,27 +106,27 @@ func (a *API) authenticate(r *http.Request) (string, bool) {
 	hash := sha256.Sum256([]byte(presented))
 	actor := ""
 	matched := 0
-	for i := range a.tokens {
-		if subtle.ConstantTimeCompare(hash[:], a.tokens[i].hash[:]) == 1 {
-			actor = a.tokens[i].name
+	for i := range g.tokens {
+		if subtle.ConstantTimeCompare(hash[:], g.tokens[i].hash[:]) == 1 {
+			actor = g.tokens[i].name
 			matched = 1
 		}
 	}
 	return actor, matched == 1
 }
 
-// clientAddress returns the address to rate limit. With trusted proxies in front,
+// ClientAddress returns the address to rate limit. With trusted proxies in front,
 // the connection comes from the nearest proxy, and each proxy appends the address
 // it saw, so the client is that many places from the end of X-Forwarded-For.
 // Anything further left is written by the client and proves nothing.
-func (a *API) clientAddress(r *http.Request) string {
+func ClientAddress(r *http.Request, trustedProxies int) string {
 	address := r.RemoteAddr
 	if host, _, err := net.SplitHostPort(address); err == nil {
 		address = host
 	}
-	if a.trustedProxies > 0 {
+	if trustedProxies > 0 {
 		hops := strings.Split(strings.Join(r.Header.Values("X-Forwarded-For"), ","), ",")
-		if i := len(hops) - a.trustedProxies; i >= 0 {
+		if i := len(hops) - trustedProxies; i >= 0 {
 			address = strings.TrimSpace(hops[i])
 		}
 	}
