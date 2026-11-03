@@ -8,6 +8,8 @@ import { PageConfigContext } from '../config/context'
 import type { PageConfig } from '../config/pageConfig'
 import { HomePage } from '../pages/home/HomePage'
 import { NotFound } from '../pages/NotFound'
+import { ReportsPage } from '../pages/reports/list/ReportsPage'
+import { ReportPage } from '../pages/reports/report/ReportPage'
 
 import { Layout } from './Layout'
 import { colorModeOf, readThemeChoice, saveThemeChoice, type ThemeChoice } from './theme'
@@ -34,6 +36,8 @@ export function App({ config, queryClient }: AppProps) {
               <Routes>
                 <Route element={<Layout theme={theme} onTheme={choose} />}>
                   <Route index element={<HomePage />} />
+                  <Route path="reports" element={<ReportsPage />} />
+                  <Route path="reports/:id" element={<ReportPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>

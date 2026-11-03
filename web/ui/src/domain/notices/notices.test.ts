@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest'
 
-import type { MaintenanceWindow } from '../../api/plugins/types'
-import { at, report } from '../../test/fixtures'
+import { impacts, type MaintenanceWindow } from '../../api/plugins/types'
+import { at, report, results } from '../../test/fixtures'
+import { momentAt, serviceStatuses } from '../status/service'
 
 import { covers, windowFor, windowsAt, windowsDuring } from './maintenance'
-import { impactOn, reportsAt, stageWord } from './reports'
+import {
+  groupReports,
+  impactOn,
+  impactWord,
+  reportsAt,
+  reportsPageParam,
+  stageWord,
+} from './reports'
 
 const updated = report({
   stage: 'resolved',
@@ -84,6 +92,48 @@ describe('impactOn', () => {
 
   it('words the stages', () => {
     expect(stageWord('investigating')).toBe('Investigating')
+  })
+})
+
+describe('impactWord', () => {
+  it.each(impacts)('words %s the way a service row does', (impact) => {
+    const named = report({ endpoints: [{ key: 'media', name: 'Media', impact }] })
+    const [status] = serviceStatuses(
+      [{ key: 'media', name: 'Media', group: '', results: results(3, { last: 40 }) }],
+      momentAt(at(50), [named], []),
+    )
+    expect(impactWord(impact)).toBe(status?.word)
+  })
+})
+
+describe('groupReports', () => {
+  it('puts unresolved reports first, each group by most recent change', () => {
+    const open = (id: string, minute: number) => report({ id, updatedAt: at(minute) })
+    const done = (id: string, minute: number) =>
+      report({ id, stage: 'resolved', resolvedAt: at(minute), updatedAt: at(minute) })
+    const groups = groupReports([done('d1', 90), open('o1', 50), done('d2', 95), open('o2', 70)])
+    expect(groups.active.map((item) => item.id)).toEqual(['o2', 'o1'])
+    expect(groups.past.map((item) => item.id)).toEqual(['d2', 'd1'])
+  })
+
+  it('treats a report with a resolution time as past whatever its stage says', () => {
+    const odd = report({ resolvedAt: at(80), updatedAt: at(80) })
+    expect(groupReports([odd])).toEqual({ active: [], past: [odd] })
+  })
+})
+
+describe('reportsPageParam', () => {
+  it.each([
+    [null, 1],
+    ['2', 2],
+    ['0', 1],
+    ['-3', 1],
+    ['1.5', 1],
+    ['abc', 1],
+    ['02', 1],
+    ['9999999', 1],
+  ])('reads %s as page %i', (raw, page) => {
+    expect(reportsPageParam(raw)).toBe(page)
   })
 })
 
