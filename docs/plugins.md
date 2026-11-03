@@ -33,6 +33,7 @@ A plugin that cannot run never stops the status page. It is logged with a state 
 | `feeds` | Publishes notices at `/feed/atom.xml`, `/feed/rss.xml` and `/feed/feed.json` | Nothing |
 | `incidents` | Internal incidents and public reports, with a token API and notices | `database` |
 | `maintenance-windows` | Dated maintenance on the status page and at `/api/v1/maintenance`, with optional alert silencing | Nothing |
+| `problem-reports` | A "Report a problem" form at `/report-a-problem`, and a token API to read and delete reports | `database`; a privacy notice and a contact |
 | `report-pages` | Public pages for published reports at `/reports` and `/reports/{id}`, and the same as JSON under `/api/v1/reports` | `incidents` to show reports |
 
 ```yaml
@@ -177,6 +178,38 @@ plugins:
 - The token is kept in the tab's `sessionStorage` and is gone when the tab closes. A refused token signs the page out. No cookies are used.
 - The page loads only this site's own scripts and stylesheets, under a policy that allows no inline script or style, no other origin and no framing. Stored text is only ever written into the page as text.
 - The route is public like every plugin route, so put it behind your proxy's access rules if you want fewer people to see it.
+
+#### Problem reports
+
+```yaml
+plugins:
+  - name: problem-reports
+    config:
+      privacy-url: https://example.com/privacy  # required: https, or a path on this site
+      contact: privacy@example.com              # required: an email or https address
+      retention: 2160h                          # 24h to 8760h; default 2160h (90 days)
+      trusted-proxies: 1                        # proxies in front of Gatus; default 0
+      country-header: X-Client-Region           # optional; needs trusted-proxies
+      proxy-networks: [10.0.0.0/8]              # optional: where the nearest proxy connects from
+      per-client-limit: 5                       # reports per client per hour; default 5
+      global-limit: 200                         # reports in all per hour; default 200
+      tokens:                                   # who may read and delete; same format as incidents
+        - name: alice
+          sha256: <hex SHA-256 of the token>
+```
+
+The plugin refuses to start without `privacy-url` and `contact`, so the form cannot collect anything until visitors can read what happens to their report. While it runs, the footer and each service page link to `/report-a-problem`, which shows a short notice of what is kept, why and for how long, then the form. Without the plugin there is no link, and the page says reports are not taken. The page sets no cookies and uses no browser storage. What is kept and why is described in [privacy/problem-reports.md](privacy/problem-reports.md).
+
+`POST /api/v1/problem-reports` takes JSON up to 8 KB: `description` (10 to 2000 characters), and optional `service` (an endpoint, suite or group key the page shows), `details` (up to 2000 characters) and `page` (a path on this site; a query or fragment is dropped). It answers `201` with `{"reference": "PR-..."}`. It sends no CORS headers and refuses a request whose `Origin` names another site or whose `Sec-Fetch-Site` is not `same-origin` (`403`). Over the limit it answers `429` with `Retry-After`. The server adds the time to the second, a country code when one can be trusted, and the browser family, its major version and the system family. It never stores the address, the User-Agent, cookies or a device ID. The rate limit counts each client by HMAC-SHA256 of its address under a key made at start and kept only in memory. `GET /api/v1/problem-reports/settings` tells the page the notice address, the contact and the retention in days.
+
+The country is believed only from a proxy: the request must carry at least `trusted-proxies` forwarded hops, and, with `proxy-networks`, come from one of those networks. The header must appear once and hold two capital letters; `XX` and anything else leave the country empty. Make sure the proxy replaces a header of that name that a client sends. Sources that set a request header:
+
+- A Google Cloud external Application Load Balancer, with a custom request header such as `X-Client-Region: {client_region}`. Google describes the value as a CLDR region code, which is usually but not always the ISO code.
+- Cloudflare, with visitor location headers on, sends `CF-IPCountry`.
+
+A header that a front end sets on the response, such as `x-country-code`, never reaches Gatus. Do not assume a platform adds a request header until you have seen it arrive on a test service; never test against production.
+
+The token routes are `GET /api/v1/admin/problem-reports` (query `service`, `country`, `from` and `to` as RFC 3339 times, `limit` up to 200, `offset`; returns `{"reports": [...], "more": false}`, newest first), `GET /api/v1/admin/problem-reports/{reference}`, `DELETE /api/v1/admin/problem-reports/{reference}` (`204`), and `GET /api/v1/admin/problem-reports/summary`, which counts the last hour's reports by country and by service. They answer `401` without a valid token, and the admin page shows them under "Problem reports" when its token is also listed here. A purge at start and every hour deletes reports older than `retention`.
 
 #### Build on it
 
