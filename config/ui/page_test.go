@@ -117,3 +117,23 @@ func TestContentSecurityPolicyAllowsOnlyWhatThePageUses(t *testing.T) {
 		t.Errorf("default policy: %s", got)
 	}
 }
+
+// The page reads lower-case "name" and "link"; any other spelling makes it drop
+// every footer link, button and browser check as malformed.
+func TestPageSettingsLinksUseThePagesFieldNames(t *testing.T) {
+	cfg := GetDefaultConfig()
+	cfg.FooterLinks = []Button{{Name: "Pralvo", Link: "https://pralvo.com/"}}
+	cfg.BrowserChecks = []Button{{Name: "Website", Link: "https://pralvo.com/"}}
+	out, err := json.Marshal(cfg.PageSettings())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`"footerLinks":[{"name":"Pralvo","link":"https://pralvo.com/"}]`,
+		`"browserChecks":[{"name":"Website","link":"https://pralvo.com/"}]`,
+	} {
+		if !strings.Contains(string(out), want) {
+			t.Errorf("missing %s in %s", want, out)
+		}
+	}
+}
