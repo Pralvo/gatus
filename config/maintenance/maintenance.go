@@ -1,3 +1,5 @@
+// Changed by Pralvo: adds a check that plugins can use to silence alerts.
+
 package maintenance
 
 import (
@@ -6,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 	_ "time/tzdata" // Required for IANA timezone support
 )
@@ -44,6 +47,25 @@ type Config struct {
 
 	timezoneLocation            *time.Location
 	durationToStartFromMidnight time.Duration
+}
+
+// scheduleCheck is the plugin hook behind IsScheduled.
+var scheduleCheck atomic.Pointer[func(endpointKey string) bool]
+
+// SetScheduleCheck sets a function that says whether an endpoint is in planned
+// maintenance. Passing nil removes it.
+func SetScheduleCheck(check func(endpointKey string) bool) {
+	if check == nil {
+		scheduleCheck.Store(nil)
+		return
+	}
+	scheduleCheck.Store(&check)
+}
+
+// IsScheduled reports whether a plugin has an endpoint in planned maintenance.
+func IsScheduled(endpointKey string) bool {
+	check := scheduleCheck.Load()
+	return check != nil && (*check)(endpointKey)
 }
 
 func GetDefaultConfig() *Config {

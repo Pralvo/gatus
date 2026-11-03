@@ -21,13 +21,13 @@ func core(notices ...*announcement.Announcement) map[plugin.Key]any {
 	return map[plugin.Key]any{plugin.CoreConfig: &config.Config{UI: ui.GetDefaultConfig(), Announcements: notices}}
 }
 
-func notice(day int, kind, message string) *announcement.Announcement {
+func note(day int, kind, message string) *announcement.Announcement {
 	return &announcement.Announcement{Timestamp: time.Date(2026, 11, day, 10, 0, 0, 0, time.UTC), Type: kind, Message: message}
 }
 
 func TestAtomIsWellFormedNewestFirstAndEscaped(t *testing.T) {
 	hostile := `</content><script>alert(1)</script> & "quotes"`
-	h := plugintest.Start(t, Definition, validConfig, core(notice(1, "operational", "Old"), notice(2, "outage", hostile)))
+	h := plugintest.Start(t, Definition, validConfig, core(note(1, "operational", "Old"), note(2, "outage", hostile)))
 	response := h.Get("/feed/atom.xml")
 	if response.Code != http.StatusOK || !strings.HasPrefix(response.Header().Get("Content-Type"), "application/atom+xml") {
 		t.Fatalf("got %d %s", response.Code, response.Header().Get("Content-Type"))
@@ -48,7 +48,7 @@ func TestAtomIsWellFormedNewestFirstAndEscaped(t *testing.T) {
 }
 
 func TestRSSIsWellFormed(t *testing.T) {
-	h := plugintest.Start(t, Definition, validConfig, core(notice(1, "warning", "Slow & steady")))
+	h := plugintest.Start(t, Definition, validConfig, core(note(1, "warning", "Slow & steady")))
 	var parsed rssFeed
 	if err := xml.Unmarshal(h.Get("/feed/rss.xml").Body.Bytes(), &parsed); err != nil {
 		t.Fatal(err)
@@ -74,9 +74,9 @@ func TestJSONFeedShape(t *testing.T) {
 }
 
 func TestEntryIDsAreStableAndContentBased(t *testing.T) {
-	first := plugintest.Start(t, Definition, validConfig, core(notice(1, "outage", "One")))
-	again := plugintest.Start(t, Definition, validConfig, core(notice(1, "outage", "One")))
-	edited := plugintest.Start(t, Definition, validConfig, core(notice(1, "outage", "Two")))
+	first := plugintest.Start(t, Definition, validConfig, core(note(1, "outage", "One")))
+	again := plugintest.Start(t, Definition, validConfig, core(note(1, "outage", "One")))
+	edited := plugintest.Start(t, Definition, validConfig, core(note(1, "outage", "Two")))
 	id := func(h *plugintest.Harness) string {
 		var parsed atomFeed
 		if err := xml.Unmarshal(h.Get("/feed/atom.xml").Body.Bytes(), &parsed); err != nil {
@@ -96,7 +96,7 @@ func TestEntryIDsAreStableAndContentBased(t *testing.T) {
 }
 
 func TestLimitKeepsNewest(t *testing.T) {
-	h := plugintest.Start(t, Definition, validConfig+"\nlimit: 1", core(notice(1, "none", "Old"), notice(2, "none", "New")))
+	h := plugintest.Start(t, Definition, validConfig+"\nlimit: 1", core(note(1, "none", "Old"), note(2, "none", "New")))
 	var parsed atomFeed
 	if err := xml.Unmarshal(h.Get("/feed/atom.xml").Body.Bytes(), &parsed); err != nil {
 		t.Fatal(err)
@@ -114,11 +114,11 @@ func TestTitles(t *testing.T) {
 		long:              "Outage: " + strings.Repeat("é", 79) + "…",
 	}
 	for message, want := range cases {
-		if got := titleOf(notice(1, "outage", message)); got != want {
+		if got := titleOf(note(1, "outage", message)); got != want {
 			t.Fatalf("%q: got %q", message, got)
 		}
 	}
-	if got := titleOf(notice(1, "none", "Plain")); got != "Plain" {
+	if got := titleOf(note(1, "none", "Plain")); got != "Plain" {
 		t.Fatalf("no label: %q", got)
 	}
 }

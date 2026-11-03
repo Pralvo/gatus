@@ -1,3 +1,5 @@
+// Changed by Pralvo: honours plugin-scheduled maintenance.
+
 package watchdog
 
 import (
@@ -8,13 +10,14 @@ import (
 
 	"github.com/TwiN/gatus/v5/alerting"
 	"github.com/TwiN/gatus/v5/config/endpoint"
+	"github.com/TwiN/gatus/v5/config/maintenance"
 	"github.com/TwiN/gatus/v5/storage/store"
 	"github.com/TwiN/logr"
 )
 
 // HandleAlerting takes care of alerts to resolve and alerts to trigger based on result success or failure
 func HandleAlerting(ep *endpoint.Endpoint, result *endpoint.Result, alertingConfig *alerting.Config) {
-	if alertingConfig == nil {
+	if alertingConfig == nil || maintenance.IsScheduled(ep.Key()) {
 		return
 	}
 	if result.Success {
