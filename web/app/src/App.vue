@@ -1,4 +1,4 @@
-<!-- Changed by Pralvo: a configured logo has empty alt text, since the header beside it names the page. -->
+<!-- Changed by Pralvo: a configured logo has empty alt text, since the header beside it names the page; configured footer links come before "Powered by Gatus", and footer links are lighter on the dark theme so they stay readable. -->
 <template>
   <div id="global" class="bg-background text-foreground">
     <!-- Loading State -->
@@ -101,9 +101,13 @@
         <div class="container mx-auto px-4 py-6 max-w-7xl">
           <div class="flex flex-col items-center gap-4">
             <div class="text-sm text-muted-foreground text-center">
-              Powered by <a href="https://gatus.io" target="_blank" class="font-medium text-emerald-800 hover:text-emerald-600">Gatus</a>
+              <template v-for="footerLink in footerLinks" :key="footerLink.name">
+                <a :href="footerLink.link" target="_blank" rel="noopener" class="font-medium text-emerald-800 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300">{{ footerLink.name }}</a>
+                <span aria-hidden="true"> · </span>
+              </template>
+              Powered by <a href="https://gatus.io" target="_blank" class="font-medium text-emerald-800 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300">Gatus</a>
             </div>
-            <Social />
+            <Social :link="sourceLink" />
           </div>
         </div>
       </footer>
@@ -191,6 +195,14 @@ const link = computed(() => {
 
 const buttons = computed(() => {
   return window.config && window.config.buttons ? window.config.buttons : []
+})
+
+const footerLinks = computed(() => {
+  return window.config && window.config.footerLinks ? window.config.footerLinks : []
+})
+
+const sourceLink = computed(() => {
+  return window.config && window.config.sourceLink && window.config.sourceLink !== '{{ .UI.SourceLink }}' ? window.config.sourceLink : "https://github.com/TwiN/gatus"
 })
 
 const loginSubtitle = computed(() => {
