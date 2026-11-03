@@ -1,0 +1,104 @@
+/* The response-time chart (design spec 4.2 item 5). Colours come from Primer and Pralvo tokens only. */
+
+.box {
+  padding: 12px 12px 8px;
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 12px;
+}
+
+.figure {
+  width: 100%;
+}
+
+.svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.band {
+  fill: var(--bgColor-neutral-muted);
+}
+
+.grid {
+  stroke: var(--borderColor-muted);
+  stroke-width: 1;
+}
+
+.failed {
+  fill: var(--bgColor-danger-muted);
+}
+
+.failedEdge {
+  stroke: var(--pralvo-cell-failed);
+  stroke-dasharray: 3 3;
+}
+
+.line {
+  fill: none;
+  stroke: var(--fgColor-default);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.tick {
+  fill: var(--fgColor-muted);
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.description {
+  margin: 4px 4px 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--fgColor-muted);
+}
+
+.toggle {
+  margin-top: 8px;
+}
+
+.tableBox {
+  max-height: 420px;
+  overflow: auto;
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 12px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th,
+.table td {
+  padding: 6px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--borderColor-default);
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bgColor-muted);
+  font-weight: 600;
+}
+
+.table tbody th {
+  font-weight: 400;
+}
+
+.caption {
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--fgColor-muted);
+  text-align: left;
+}

@@ -6,10 +6,12 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 
 import { PageConfigContext } from '../config/context'
 import type { PageConfig } from '../config/pageConfig'
+import { FlowPage } from '../pages/flow/FlowPage'
 import { HomePage } from '../pages/home/HomePage'
 import { NotFound } from '../pages/NotFound'
 import { ReportsPage } from '../pages/reports/list/ReportsPage'
 import { ReportPage } from '../pages/reports/report/ReportPage'
+import { ServicePage } from '../pages/service/ServicePage'
 
 import { Layout } from './Layout'
 import { colorModeOf, readThemeChoice, saveThemeChoice, type ThemeChoice } from './theme'
@@ -38,6 +40,8 @@ export function App({ config, queryClient }: AppProps) {
                   <Route index element={<HomePage />} />
                   <Route path="reports" element={<ReportsPage />} />
                   <Route path="reports/:id" element={<ReportPage />} />
+                  <Route path="endpoints/:key" element={<ServicePage />} />
+                  <Route path="suites/:key" element={<FlowPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>

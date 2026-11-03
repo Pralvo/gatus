@@ -1,0 +1,131 @@
+/* The flow page (design spec 4.3): the latest run, the chosen run's steps, then the runs. */
+
+.h1 {
+  margin-top: 12px;
+}
+
+.banner {
+  margin-top: 16px;
+}
+
+.word {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.lead {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--fgColor-muted);
+  overflow-wrap: anywhere;
+}
+
+.box {
+  padding: 8px 0;
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 12px;
+}
+
+.text {
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--fgColor-muted);
+}
+
+.note {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--fgColor-muted);
+  overflow-wrap: anywhere;
+}
+
+.steps {
+  margin: 0;
+  padding: 0 0 0 36px;
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 12px;
+}
+
+.step {
+  padding: 12px 16px 12px 4px;
+  border-bottom: 1px solid var(--borderColor-default);
+}
+
+.step:last-child {
+  border-bottom: 0;
+}
+
+.step::marker {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepLine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+}
+
+.stepName {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.why {
+  margin: 4px 0 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.details {
+  margin-top: 8px;
+}
+
+.passed {
+  color: var(--fgColor-success);
+}
+
+.failed {
+  color: var(--fgColor-danger);
+}
+
+.code {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.conditions {
+  margin: 0 0 12px;
+  padding-left: 18px;
+}
+
+.conditions li + li {
+  margin-top: 6px;
+}
+
+.h3 {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dialogHead {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dialogTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}

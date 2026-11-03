@@ -1,0 +1,106 @@
+/* The lower parts of the service page: record, history and badges (design spec 4.2 items 7 to 9). */
+
+.box {
+  padding: 16px;
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 12px;
+}
+
+.sub {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--fgColor-muted);
+}
+
+.text {
+  margin: 0;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+  font-size: 14px;
+  color: var(--fgColor-muted);
+}
+
+.itemText {
+  display: block;
+  margin: 2px 0;
+  color: var(--fgColor-default);
+  overflow-wrap: anywhere;
+}
+
+.tone-danger {
+  color: var(--fgColor-danger);
+}
+
+.tone-success {
+  color: var(--fgColor-success);
+}
+
+.tone-neutral {
+  color: var(--fgColor-muted);
+}
+
+.section {
+  margin-top: 40px;
+}
+
+.embed {
+  padding: 12px 16px;
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 12px;
+}
+
+.embed summary {
+  min-height: 24px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.embed summary:focus-visible {
+  outline: 2px solid var(--focus-outlineColor);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.embed .sub {
+  margin-top: 8px;
+}
+
+.badge + .badge {
+  margin-top: 14px;
+}
+
+.badgeLabel {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.code {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.code code {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  background: var(--bgColor-muted);
+  border-radius: 6px;
+}
+
+.status {
+  min-height: 1.5em;
+  margin: 8px 0 0;
+  font-size: 14px;
+}
