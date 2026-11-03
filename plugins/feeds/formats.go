@@ -19,11 +19,12 @@ type atomText struct {
 }
 
 type atomEntry struct {
-	Title   string   `xml:"title"`
-	ID      string   `xml:"id"`
-	Updated string   `xml:"updated"`
-	Link    atomLink `xml:"link"`
-	Content atomText `xml:"content"`
+	Title     string   `xml:"title"`
+	ID        string   `xml:"id"`
+	Published string   `xml:"published"`
+	Updated   string   `xml:"updated"`
+	Link      atomLink `xml:"link"`
+	Content   atomText `xml:"content"`
 }
 
 type atomFeed struct {
@@ -40,8 +41,8 @@ type atomAuthor struct {
 	Name string `xml:"name"`
 }
 
-func (f *feed) atom(w http.ResponseWriter, _ *http.Request) {
-	entries := f.entries()
+func (f *feed) atom(w http.ResponseWriter, r *http.Request) {
+	entries := f.entries(r.Context())
 	document := atomFeed{
 		Title:   f.config.Title,
 		ID:      f.base + "/feed/atom.xml",
@@ -54,11 +55,12 @@ func (f *feed) atom(w http.ResponseWriter, _ *http.Request) {
 	}
 	for _, e := range entries {
 		document.Entries = append(document.Entries, atomEntry{
-			Title:   e.title,
-			ID:      e.id,
-			Updated: e.time.Format(time.RFC3339),
-			Link:    atomLink{Rel: "alternate", Type: "text/html", Href: e.link},
-			Content: atomText{Type: "text", Body: e.content},
+			Title:     e.title,
+			ID:        e.id,
+			Published: e.published.Format(time.RFC3339),
+			Updated:   e.time.Format(time.RFC3339),
+			Link:      atomLink{Rel: "alternate", Type: "text/html", Href: e.link},
+			Content:   atomText{Type: "text", Body: e.content},
 		})
 	}
 	f.writeXML(w, "application/atom+xml; charset=utf-8", document)
@@ -91,8 +93,8 @@ type rssFeed struct {
 	Channel rssChannel `xml:"channel"`
 }
 
-func (f *feed) rss(w http.ResponseWriter, _ *http.Request) {
-	entries := f.entries()
+func (f *feed) rss(w http.ResponseWriter, r *http.Request) {
+	entries := f.entries(r.Context())
 	document := rssFeed{
 		Version: "2.0",
 		Channel: rssChannel{
@@ -102,6 +104,8 @@ func (f *feed) rss(w http.ResponseWriter, _ *http.Request) {
 			LastBuildDate: f.updated(entries).Format(time.RFC1123Z),
 		},
 	}
+	// An item's date is when it last changed, so an updated report sorts where
+	// a reader expects it. Its guid stays the same.
 	for _, e := range entries {
 		document.Channel.Items = append(document.Channel.Items, rssItem{
 			Title:       e.title,
@@ -130,6 +134,7 @@ type jsonItem struct {
 	Title         string `json:"title"`
 	ContentText   string `json:"content_text"`
 	DatePublished string `json:"date_published"`
+	DateModified  string `json:"date_modified"`
 }
 
 type jsonFeed struct {
@@ -140,7 +145,7 @@ type jsonFeed struct {
 	Items       []jsonItem `json:"items"`
 }
 
-func (f *feed) json(w http.ResponseWriter, _ *http.Request) {
+func (f *feed) json(w http.ResponseWriter, r *http.Request) {
 	document := jsonFeed{
 		Version:     "https://jsonfeed.org/version/1.1",
 		Title:       f.config.Title,
@@ -148,13 +153,14 @@ func (f *feed) json(w http.ResponseWriter, _ *http.Request) {
 		FeedURL:     f.base + "/feed/feed.json",
 		Items:       []jsonItem{},
 	}
-	for _, e := range f.entries() {
+	for _, e := range f.entries(r.Context()) {
 		document.Items = append(document.Items, jsonItem{
 			ID:            e.id,
 			URL:           e.link,
 			Title:         e.title,
 			ContentText:   e.content,
-			DatePublished: e.time.Format(time.RFC3339),
+			DatePublished: e.published.Format(time.RFC3339),
+			DateModified:  e.time.Format(time.RFC3339),
 		})
 	}
 	body, err := json.Marshal(document)

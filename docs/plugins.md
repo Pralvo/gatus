@@ -30,7 +30,7 @@ A plugin that cannot run never stops the status page. It is logged with a state 
 |---|---|---|
 | `admin-page` | A page at `/admin` for managing incidents and reports with a token | `incidents` to do anything |
 | `database` | A SQL connection for other plugins, separate from Gatus's history store | SQLite file or Postgres server |
-| `feeds` | Publishes notices at `/feed/atom.xml`, `/feed/rss.xml` and `/feed/feed.json` | Nothing |
+| `feeds` | Publishes notices, reports and, if asked, status changes at `/feed/atom.xml`, `/feed/rss.xml` and `/feed/feed.json` | `incidents` for reports |
 | `incidents` | Internal incidents and public reports, with a token API and notices | `database` |
 | `maintenance-windows` | Dated maintenance on the status page and at `/api/v1/maintenance`, with optional alert silencing | Nothing |
 | `report-pages` | Public pages for published reports at `/reports` and `/reports/{id}`, and the same as JSON under `/api/v1/reports` | `incidents` to show reports |
@@ -59,7 +59,24 @@ plugins:
     config:
       base-url: https://status.example.com # required
       title: Example status                # defaults to the page title
-      limit: 50                            # default 50
+      limit: 50                            # default 50, at most 200
+      status-changes: false                # add an entry when a shown endpoint fails or recovers
+```
+
+A feed lists notices from the configuration and from maintenance windows, and published reports read from the `incidents` plugin when it runs. Each report is one entry whose ID comes from the report's ID, so an edit or a new update changes that entry, and its `updated` date is the latest change. Reports stay in the feed however old they are, until `limit` newer entries push them out. With `status-changes`, each endpoint the status page lists gets an entry when it starts failing its checks ("Website is down") and when it passes them again ("Website is working again"), read from Gatus's stored events. Those entries hold the endpoint's name and the time, never its address or errors. Entries are reused for up to ten seconds, and a report change shows at once. `/feed.json`, `/feed.atom`, `/atom.xml`, `/rss.xml` and `/feed.xml` redirect to the feeds, and the status page and report pages link them for feed readers.
+
+To be alerted when a feed breaks, let the status page check its own JSON feed. The check fails on an error status, a body that is not the feed, or the wrong version:
+
+```yaml
+endpoints:
+  - name: JSON feed
+    group: Status page
+    url: https://status.example.com/feed/feed.json
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].version == https://jsonfeed.org/version/1.1"
+      - "len([BODY].title) > 0"
 ```
 
 ```yaml
