@@ -1,0 +1,14 @@
+{{define "summary"}}<article class="card">
+<h3><a href="/reports/{{.ID}}">{{.Title}}</a></h3>
+<p><span class="tag {{.Stage.Class}}">{{.Stage.Text}}</span> <time datetime="{{.Changed.Machine}}">{{.Changed.Text}}</time></p>
+{{with .Latest}}<p class="text">{{.Message}}</p>{{end}}
+{{with .Endpoints}}<ul class="endpoints">{{range .}}<li>{{.Name}} <span class="tag {{.Impact.Class}}">{{.Impact.Text}}</span></li>{{end}}</ul>{{end}}
+</article>{{end}}
+{{define "content"}}<h1>Reports</h1>
+{{if .Active}}<h2>Active</h2>
+{{range .Active}}{{template "summary" .}}{{end}}{{end}}
+{{if .Past}}<h2>Past</h2>
+{{range .Past}}{{template "summary" .}}{{end}}{{end}}
+{{if not (or .Active .Past)}}<p class="muted">No reports have been published.</p>{{end}}
+{{if or .Prev .Next}}<nav class="pages">{{if .Prev}}<a href="/reports?page={{.Prev}}">Newer reports</a>{{end}}{{if .Next}}<a href="/reports?page={{.Next}}">Older reports</a>{{end}}</nav>{{end}}
+{{end}}
