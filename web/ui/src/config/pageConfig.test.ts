@@ -25,6 +25,8 @@ describe('readPageConfig', () => {
           defaultSortBy: 'health',
           footerLinks: [{ name: 'Pralvo', link: 'https://pralvo.com/' }],
           sourceLink: 'https://github.com/Pralvo/gatus',
+          logoDark: '/pralvo-mark-dark.svg',
+          feeds: true,
         }),
       ),
     )
@@ -33,6 +35,8 @@ describe('readPageConfig', () => {
     expect(config.defaultSortBy).toBe('health')
     expect(config.footerLinks).toEqual([{ name: 'Pralvo', link: 'https://pralvo.com/' }])
     expect(config.sourceLink).toBe('https://github.com/Pralvo/gatus')
+    expect(config.logoDark).toBe('/pralvo-mark-dark.svg')
+    expect(config.feeds).toBe(true)
   })
 
   it('falls back to the defaults when the block is missing, empty or not JSON', () => {
@@ -65,11 +69,15 @@ describe('parsePageConfig', () => {
       defaultFilterBy: 7,
       maximumNumberOfResults: -3,
       header: 42,
+      feeds: 'yes',
+      logoDark: 'javascript:alert(1)',
     })
     expect(config.defaultSortBy).toBe('name')
     expect(config.defaultFilterBy).toBe('none')
     expect(config.maximumNumberOfResults).toBe(100)
     expect(config.header).toBe('Gatus')
+    expect(config.feeds).toBe(false)
+    expect(config.logoDark).toBe('')
   })
 
   it('treats anything but an object as empty', () => {

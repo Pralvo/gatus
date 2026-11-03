@@ -13,6 +13,8 @@ export interface PageLink {
 export interface PageConfig {
   header: string
   logo: string
+  /** Logo for the dark theme. Empty means the light logo is used on both. */
+  logoDark: string
   link: string
   buttons: PageLink[]
   dashboardHeading: string
@@ -23,11 +25,14 @@ export interface PageConfig {
   loginSubtitle: string
   footerLinks: PageLink[]
   sourceLink: string
+  /** Whether the feeds plugin serves /feed/atom.xml, /feed/rss.xml and /feed/feed.json. */
+  feeds: boolean
 }
 
 export const defaultPageConfig: PageConfig = {
   header: 'Gatus',
   logo: '',
+  logoDark: '',
   link: '',
   buttons: [],
   dashboardHeading: 'Health Dashboard',
@@ -38,6 +43,7 @@ export const defaultPageConfig: PageConfig = {
   loginSubtitle: 'System Monitoring Dashboard',
   footerLinks: [],
   sourceLink: 'https://github.com/TwiN/gatus',
+  feeds: false,
 }
 
 /** Web addresses and paths on this site. Anything else, such as javascript:, is refused. */
@@ -88,6 +94,7 @@ export function parsePageConfig(input: unknown): PageConfig {
   return {
     header: text(raw.header, fallback.header),
     logo: linkText(raw.logo, fallback.logo),
+    logoDark: linkText(raw.logoDark, fallback.logoDark),
     link: linkText(raw.link, fallback.link),
     buttons: links(raw.buttons),
     dashboardHeading: text(raw.dashboardHeading, fallback.dashboardHeading),
@@ -105,6 +112,7 @@ export function parsePageConfig(input: unknown): PageConfig {
     loginSubtitle: text(raw.loginSubtitle, fallback.loginSubtitle),
     footerLinks: links(raw.footerLinks),
     sourceLink: linkText(raw.sourceLink, fallback.sourceLink),
+    feeds: raw.feeds === true,
   }
 }
 

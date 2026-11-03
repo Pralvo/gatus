@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- The server fills the double-brace fields with html/template. In development they stay as text and the page uses its defaults. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>{{ .UI.Title }}</title>
+    <meta name="description" content="{{ .UI.Description }}" />
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ .UI.Favicon.Size32x32 }}" />
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ .UI.Favicon.Size16x16 }}" />
+    <link rel="shortcut icon" href="{{ .UI.Favicon.Default }}" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="/css/custom.css" />
+    <script type="application/json" id="page-config">
+      {{ .PageConfig }}
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </head>
+  <body>
+    <noscript
+      >This page needs JavaScript to show live status. Published reports work without it at
+      /reports.</noscript
+    >
+    <div id="root"></div>
+  </body>
+</html>

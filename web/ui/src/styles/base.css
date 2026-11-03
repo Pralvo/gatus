@@ -1,0 +1,71 @@
+/* Page-wide rules from the design spec: IBM Plex Sans, underlined links, tabular figures. */
+
+:root {
+  --fontStack-system: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fontStack-sansSerif: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+.pralvo-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bgColor-inset);
+  color: var(--fgColor-default);
+  font-family: var(--fontStack-sansSerif);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.pralvo-root a {
+  color: var(--fgColor-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pralvo-root a:hover {
+  color: var(--pralvo-link-hover);
+  text-decoration-thickness: 2px;
+}
+
+.pralvo-root .num {
+  font-variant-numeric: tabular-nums;
+}
+
+.pralvo-wrap {
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .pralvo-wrap {
+    padding: 0 24px;
+  }
+}
+
+.pralvo-main {
+  flex: 1;
+  padding-top: 24px;
+}
+
+.pralvo-skip {
+  position: absolute;
+  left: 16px;
+  top: -60px;
+  z-index: 40;
+  padding: 8px 12px;
+  background: var(--bgColor-default);
+  border: 1px solid var(--control-borderColor-rest);
+  border-radius: 6px;
+}
+
+.pralvo-skip:focus {
+  top: 8px;
+}

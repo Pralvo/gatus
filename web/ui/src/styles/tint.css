@@ -1,0 +1,108 @@
+/*
+ * Pralvo's tint over Primer's light and dark themes (design spec, section 10).
+ * The selectors match @primer/primitives' own, and this file loads after them,
+ * so these values win. --pralvo-* tokens cover status cells Primer has no token for.
+ */
+
+[data-color-mode='light'][data-light-theme='light'],
+[data-color-mode='auto'][data-light-theme='light'] {
+  --bgColor-inset: #f5f5f5;
+  --bgColor-default: #ffffff;
+  --bgColor-muted: #f4f5f6;
+  --fgColor-default: #1a1d21;
+  --fgColor-muted: #4b5158;
+  --fgColor-accent: #1a1d21;
+  --fgColor-link: #1a1d21;
+  --borderColor-default: #d5d8dc;
+  --borderColor-muted: #e4e6e9;
+  --control-borderColor-rest: #6b7178;
+  --borderColor-accent-emphasis: #1a1d21;
+  --bgColor-emphasis: #1a1d21;
+  --fgColor-onEmphasis: #ffffff;
+  --button-primary-bgColor-rest: #1a1d21;
+  --button-primary-bgColor-hover: #33383e;
+  --button-primary-bgColor-active: #33383e;
+  --button-primary-fgColor-rest: #ffffff;
+  --button-primary-borderColor-rest: transparent;
+  --button-primary-borderColor-hover: transparent;
+  --focus-outlineColor: #1a1d21;
+  --fgColor-attention: #7d4e00;
+  --pralvo-link-hover: #33383e;
+  --pralvo-cell-passed: #1f883d;
+  --pralvo-cell-attention: #9a6700;
+  --pralvo-cell-failed: #cf222e;
+  --pralvo-cell-maintenance: #4b5158;
+  --pralvo-cell-none: #868c93;
+  --pralvo-mark-corner: #7a2048;
+  --pralvo-mark-centre: #1a1d21;
+}
+
+/* Dark, chosen explicitly or by the system. */
+[data-color-mode='dark'][data-dark-theme='dark'],
+[data-color-mode='auto'][data-light-theme='dark'] {
+  --bgColor-inset: #1a1d21;
+  --bgColor-default: #212429;
+  --bgColor-muted: #2a2e33;
+  --fgColor-default: #f4f5f6;
+  --fgColor-muted: #a8adb3;
+  --fgColor-accent: #f4f5f6;
+  --fgColor-link: #f4f5f6;
+  --borderColor-default: #3a3f45;
+  --borderColor-muted: #33383e;
+  --control-borderColor-rest: #7d838a;
+  --borderColor-accent-emphasis: #f4f5f6;
+  --bgColor-emphasis: #3a3f45;
+  --fgColor-onEmphasis: #ffffff;
+  --button-primary-bgColor-rest: #f4f5f6;
+  --button-primary-bgColor-hover: #dde0e3;
+  --button-primary-bgColor-active: #dde0e3;
+  --button-primary-fgColor-rest: #1a1d21;
+  --button-primary-borderColor-rest: transparent;
+  --button-primary-borderColor-hover: transparent;
+  --focus-outlineColor: #f4f5f6;
+  --fgColor-severe: #f0883e;
+  --fgColor-danger: #ff7b72;
+  --pralvo-link-hover: #dde0e3;
+  --pralvo-cell-passed: #238636;
+  --pralvo-cell-attention: #9e6a03;
+  --pralvo-cell-failed: #da3633;
+  --pralvo-cell-maintenance: #a8adb3;
+  --pralvo-cell-none: #868c93;
+  --pralvo-mark-corner: #b85480;
+  --pralvo-mark-centre: #f4f5f6;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-color-mode='auto'][data-dark-theme='dark'] {
+    --bgColor-inset: #1a1d21;
+    --bgColor-default: #212429;
+    --bgColor-muted: #2a2e33;
+    --fgColor-default: #f4f5f6;
+    --fgColor-muted: #a8adb3;
+    --fgColor-accent: #f4f5f6;
+    --fgColor-link: #f4f5f6;
+    --borderColor-default: #3a3f45;
+    --borderColor-muted: #33383e;
+    --control-borderColor-rest: #7d838a;
+    --borderColor-accent-emphasis: #f4f5f6;
+    --bgColor-emphasis: #3a3f45;
+    --fgColor-onEmphasis: #ffffff;
+    --button-primary-bgColor-rest: #f4f5f6;
+    --button-primary-bgColor-hover: #dde0e3;
+    --button-primary-bgColor-active: #dde0e3;
+    --button-primary-fgColor-rest: #1a1d21;
+    --button-primary-borderColor-rest: transparent;
+    --button-primary-borderColor-hover: transparent;
+    --focus-outlineColor: #f4f5f6;
+    --fgColor-severe: #f0883e;
+    --fgColor-danger: #ff7b72;
+    --pralvo-link-hover: #dde0e3;
+    --pralvo-cell-passed: #238636;
+    --pralvo-cell-attention: #9e6a03;
+    --pralvo-cell-failed: #da3633;
+    --pralvo-cell-maintenance: #a8adb3;
+    --pralvo-cell-none: #868c93;
+    --pralvo-mark-corner: #b85480;
+    --pralvo-mark-centre: #f4f5f6;
+  }
+}
