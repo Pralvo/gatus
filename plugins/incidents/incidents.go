@@ -21,6 +21,10 @@ import (
 // Key is the service this plugin provides. Its value is a record.Service.
 const Key plugin.Key = "incidents"
 
+// NoticeSource names this plugin's notices, so a reader that reads the reports
+// themselves can leave them out with notice.Except.
+const NoticeSource = "incidents"
+
 // retryDelay is how long the host waits after the database failed during Start.
 const retryDelay = 30 * time.Second
 
@@ -63,7 +67,7 @@ var Definition = plugin.Definition{
 		}
 		cache := newNoticeCache(service, time.Now, ctx.Logf)
 		_ = cache.refresh(ctx.Context()) // a failure is logged, and the job tries again
-		ctx.Defer(notice.AddSource(cache.notices))
+		ctx.Defer(notice.AddNamedSource(NoticeSource, cache.notices))
 		ctx.Go("notice-refresh", cache.run)
 		for _, topic := range record.ReportTopics {
 			ctx.On(topic, func(plugin.Event) { cache.wake() })

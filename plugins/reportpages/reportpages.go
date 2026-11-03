@@ -28,6 +28,8 @@ type Config struct {
 	Title string `yaml:"title"`
 	// PageSize is how many reports the list shows on one page.
 	PageSize int `yaml:"page-size"`
+
+	feeds bool // set from the page settings, never from this block
 }
 
 // maxPageSize leaves room for the one extra report read to learn whether a
@@ -63,6 +65,7 @@ var Definition = plugin.Definition{
 		if cfg.Title == "" {
 			cfg.Title = "Status"
 		}
+		cfg.feeds = gatusConfig.UI != nil && gatusConfig.UI.Feeds
 		service := plugin.Get[record.Service](ctx, incidentsKey)
 		if service == nil {
 			ctx.Logf("the incidents plugin is not running, so report pages answer 503 until it is")

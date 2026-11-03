@@ -43,7 +43,7 @@ type pages struct {
 }
 
 func newPages(reports reportReader, cfg Config, names map[string]string, app *appParts, logf func(format string, args ...any)) (*pages, error) {
-	view, err := newRenderer(cfg.Title, app)
+	view, err := newRenderer(cfg.Title, app, cfg.feeds)
 	if err != nil {
 		return nil, err
 	}

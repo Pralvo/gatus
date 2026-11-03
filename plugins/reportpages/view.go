@@ -28,6 +28,7 @@ type renderer struct {
 	policy string
 	sets   map[string]*template.Template
 	app    *appParts
+	feeds  bool
 }
 
 // appParts let a server-made page become the app when scripts can run: the
@@ -46,7 +47,8 @@ func appOf(cfg *ui.Config, assets static.EntryAssets) *appParts {
 	return &appParts{Assets: assets, Settings: cfg.PageSettings(), policy: cfg.ContentSecurityPolicy()}
 }
 
-func newRenderer(site string, app *appParts) (*renderer, error) {
+// newRenderer makes the pages. Feeds adds links that feed readers discover.
+func newRenderer(site string, app *appParts, feeds bool) (*renderer, error) {
 	css, err := files.ReadFile("templates/style.css")
 	if err != nil {
 		return nil, err
@@ -72,7 +74,7 @@ func newRenderer(site string, app *appParts) (*renderer, error) {
 	if app != nil {
 		policy = strings.Replace(app.policy, "style-src 'self'", "style-src 'self' "+styleHash, 1)
 	}
-	return &renderer{site: site, style: template.CSS(css), policy: policy, sets: sets, app: app}, nil
+	return &renderer{site: site, style: template.CSS(css), policy: policy, sets: sets, app: app, feeds: feeds}, nil
 }
 
 // frame is what the layout reads. Description feeds the link-preview tags.
@@ -83,10 +85,11 @@ type frame struct {
 	Style       template.CSS
 	Body        any
 	App         *appParts
+	Feeds       bool
 }
 
 func (v *renderer) render(out io.Writer, name, title string, body any) error {
-	return v.sets[name].ExecuteTemplate(out, "layout", frame{Site: v.site, Title: title, Description: describe(body), Style: v.style, Body: body, App: v.app})
+	return v.sets[name].ExecuteTemplate(out, "layout", frame{Site: v.site, Title: title, Description: describe(body), Style: v.style, Body: body, App: v.app, Feeds: v.feeds})
 }
 
 // maxDescription is about what link previews show before cutting text.

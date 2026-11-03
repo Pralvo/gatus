@@ -10,7 +10,10 @@
 {{end}}<meta property="og:title" content="{{.Title}}">
 <meta property="og:site_name" content="{{.Site}}">
 <meta property="og:type" content="article">
-<style>{{.Style}}</style>
+{{if .Feeds}}<link rel="alternate" type="application/atom+xml" title="{{.Site}} (Atom)" href="/feed/atom.xml">
+<link rel="alternate" type="application/rss+xml" title="{{.Site}} (RSS)" href="/feed/rss.xml">
+<link rel="alternate" type="application/feed+json" title="{{.Site}} (JSON Feed)" href="/feed/feed.json">
+{{end}}<style>{{.Style}}</style>
 {{with .App}}{{range .Assets.Stylesheets}}<link rel="stylesheet" crossorigin href="{{.}}">
 {{end}}<script type="application/json" id="page-config">{{.Settings}}</script>
 {{range .Assets.Scripts}}<script type="module" crossorigin src="{{.}}"></script>
