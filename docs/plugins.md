@@ -24,6 +24,21 @@ A plugin that cannot run never stops the status page. It is logged with a state 
 | `disabled` | Turned off in the configuration |
 | `failed` | Unknown name, bad config, a dependency cycle or a failed start |
 
+## Included plugins
+
+| Plugin | What it does | Needs |
+|---|---|---|
+| `feeds` | Publishes notices at `/feed/atom.xml`, `/feed/rss.xml` and `/feed/feed.json` | Nothing |
+
+```yaml
+plugins:
+  - name: feeds
+    config:
+      base-url: https://status.example.com # required
+      title: Example status                # defaults to the page title
+      limit: 50                            # default 50
+```
+
 ## Write a plugin
 
 ```sh
