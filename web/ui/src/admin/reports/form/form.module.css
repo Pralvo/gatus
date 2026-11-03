@@ -1,0 +1,31 @@
+/* Report forms: fields stacked in one column, two columns of impacts when there is room. */
+
+.picker {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px 24px;
+}
+
+@media (min-width: 544px) {
+  .picker {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-weight: 600;
+}

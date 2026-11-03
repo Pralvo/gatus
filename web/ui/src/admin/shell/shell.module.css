@@ -1,0 +1,139 @@
+/* The admin frame and the small pieces Primer has no component for. Admin text is 14 px. */
+
+.header {
+  background: var(--bgColor-default);
+  border-bottom: 1px solid var(--borderColor-default);
+}
+
+.headerRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-height: 56px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.brand {
+  margin-right: auto;
+  font-weight: 600;
+}
+
+.back {
+  font-size: 14px;
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.narrowNav {
+  margin-bottom: 16px;
+  /* Primer's active underline is orange; Pralvo marks the current tab in its text colour. */
+  --underlineNav-borderColor-active: var(--fgColor-default);
+}
+
+/* Primary actions are at least 44 px tall at phone widths (spec section 9.5). */
+@media (max-width: 543px) {
+  .main :global(button[data-variant='primary']) {
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 768px) {
+  .headerRow,
+  .main {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .narrowNav {
+    display: none;
+  }
+}
+
+.h1 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.h1:focus {
+  outline: none;
+}
+
+.h1:focus-visible {
+  outline: 2px solid var(--focus-outlineColor);
+  outline-offset: 2px;
+}
+
+.muted {
+  color: var(--fgColor-muted);
+}
+
+/* Record tables: a semantic table that stacks into labelled rows below 544 px. */
+
+.table {
+  width: 100%;
+  margin-top: 16px;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--bgColor-default);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-top: 1px solid var(--borderColor-default);
+  overflow-wrap: break-word;
+}
+
+.table thead th {
+  border-top: 0;
+  background: var(--bgColor-muted);
+  font-weight: 600;
+}
+
+@media (max-width: 543px) {
+  .table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .table tr {
+    display: block;
+    padding: 8px 12px;
+    border-top: 1px solid var(--borderColor-default);
+  }
+
+  .table tbody tr:first-child {
+    border-top: 0;
+  }
+
+  .table td {
+    display: block;
+    padding: 2px 0;
+    border-top: 0;
+  }
+
+  .table td[data-label]::before {
+    content: attr(data-label) ': ';
+    font-weight: 600;
+  }
+}
