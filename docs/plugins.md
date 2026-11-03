@@ -28,8 +28,27 @@ A plugin that cannot run never stops the status page. It is logged with a state 
 
 | Plugin | What it does | Needs |
 |---|---|---|
+| `database` | A SQL connection for other plugins, separate from Gatus's history store | SQLite file or Postgres server |
 | `feeds` | Publishes notices at `/feed/atom.xml`, `/feed/rss.xml` and `/feed/feed.json` | Nothing |
 | `maintenance-windows` | Dated maintenance on the status page, with optional alert silencing | Nothing |
+
+```yaml
+plugins:
+  - name: database
+    config:
+      type: sqlite                # sqlite or postgres
+      path: /data/plugins.db      # the SQLite file
+```
+
+```yaml
+plugins:
+  - name: database
+    config:
+      type: postgres
+      path: ${PLUGIN_DATABASE_DSN} # the connection string, kept out of the file
+```
+
+The connection is separate from Gatus's history store, so a database failure switches off the features that need it and leaves the status page up. While the database is down the plugin shows as `failed`, retries every 30 seconds, and the plugins that need it show as `waiting`. An in-memory SQLite path is refused, because its data would vanish on restart. The connection string is never logged.
 
 ```yaml
 plugins:
@@ -72,7 +91,7 @@ var Definition = plugin.Definition{
 	Wants:    []plugin.Key{"mailer"},            // used if present
 	Provides: []plugin.Key{"reports"},           // Start must publish these
 	Start: func(ctx *plugin.Context) error {
-		db := plugin.Get[*sql.DB](ctx, "database")
+		db := plugin.Get[*database.DB](ctx, database.Key)
 		ctx.Provide("reports", newStore(db))
 		ctx.HandleFunc("GET /reports/{id}", show)
 		return nil
@@ -91,6 +110,35 @@ var Definition = plugin.Definition{
 | `ctx.On`, `ctx.Publish` | Exchange events with other plugins |
 | `ctx.Go`, `ctx.Every` | Run background jobs that end when the plugin stops |
 | `ctx.Defer(undo)` | Record an undo step for anything else |
+
+### Store data
+
+Add `database.Key` to `Needs`, then read the service. `Rebind` lets one SQL string work on both databases, and `Migrate` brings a plugin's tables up to date:
+
+```go
+db := plugin.Get[*database.DB](ctx, database.Key)
+if err := db.Migrate("reports", []string{
+	`CREATE TABLE reports (id TEXT PRIMARY KEY, title TEXT NOT NULL)`, // version 1
+	`ALTER TABLE reports ADD COLUMN stage TEXT NOT NULL DEFAULT ''`,   // version 2
+}); err != nil {
+	return err
+}
+_, err := db.SQL().ExecContext(ctx.Context(), db.Rebind(`INSERT INTO reports (id, title) VALUES (?, ?)`), id, title)
+```
+
+- A migration's version is its place in the list, so only add to the end, and never edit one that has shipped.
+- Each migration runs once per owner, in its own transaction. The first failure stops the rest and returns the error.
+- A query on a request path or in a job should pass a context with a deadline, so a slow database cannot hold it up.
+
+### Test against Postgres
+
+SQLite tests always run. Tests written with `databasetest.Each` also run on Postgres when `TEST_POSTGRES_DSN` is set, and otherwise report a skip by name. `make dev-db` starts a Postgres container with Podman, for local development only: it binds to the loopback address and has no password.
+
+```sh
+make dev-db
+export TEST_POSTGRES_DSN='postgres://postgres@127.0.0.1:55432/gatus_dev?sslmode=disable'
+go test -race ./plugins/...
+```
 
 ## Rules
 

@@ -1,4 +1,4 @@
-# Changed by Pralvo: adds the plugin target. See docs/plugins.md.
+# Changed by Pralvo: adds the plugin and dev-db targets. See docs/plugins.md.
 
 BINARY=gatus
 
@@ -21,6 +21,10 @@ clean:
 .PHONY: plugin
 plugin:
 	go run ./plugin/cmd/newplugin $(NAME)
+
+.PHONY: dev-db
+dev-db:
+	podman start pralvo-gatus-postgres 2>/dev/null || podman run -d --name pralvo-gatus-postgres -p 127.0.0.1:55432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_DB=gatus_dev -v pralvo-gatus-pgdata:/var/lib/postgresql docker.io/library/postgres:18-alpine
 
 .PHONY: test
 test:
