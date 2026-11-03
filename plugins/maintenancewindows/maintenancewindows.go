@@ -34,7 +34,8 @@ type Window struct {
 	// AnnounceBefore is how long before Start the notice appears.
 	AnnounceBefore time.Duration `yaml:"announce-before"`
 
-	keys map[string]bool
+	keys      map[string]bool
+	endpoints []publicEndpoint
 }
 
 // Config is the plugin's config: block.
@@ -59,6 +60,7 @@ var Definition = plugin.Definition{
 		}
 		schedule := &schedule{windows: cfg.Windows, now: time.Now}
 		ctx.Defer(notice.AddSource(schedule.notices))
+		ctx.HandleFunc("GET /api/v1/maintenance", schedule.serve)
 		maintenance.SetScheduleCheck(schedule.silenced)
 		ctx.Defer(func() error { maintenance.SetScheduleCheck(nil); return nil })
 		return nil
@@ -66,14 +68,14 @@ var Definition = plugin.Definition{
 }
 
 func validate(windows []*Window, gatusConfig *config.Config) error {
-	known := map[string]string{}
+	known := map[string]publicEndpoint{}
 	for _, ep := range gatusConfig.Endpoints {
-		known[ep.Name] = ep.Key()
-		known[ep.Group+"/"+ep.Name] = ep.Key()
+		known[ep.Name] = publicEndpoint{Key: ep.Key(), Name: ep.Name}
+		known[ep.Group+"/"+ep.Name] = publicEndpoint{Key: ep.Key(), Name: ep.Name}
 	}
 	for _, ee := range gatusConfig.ExternalEndpoints {
-		known[ee.Name] = ee.Key()
-		known[ee.Group+"/"+ee.Name] = ee.Key()
+		known[ee.Name] = publicEndpoint{Key: ee.Key(), Name: ee.Name}
+		known[ee.Group+"/"+ee.Name] = publicEndpoint{Key: ee.Key(), Name: ee.Name}
 	}
 	for i, w := range windows {
 		if strings.TrimSpace(w.Title) == "" {
@@ -83,12 +85,14 @@ func validate(windows []*Window, gatusConfig *config.Config) error {
 			return fmt.Errorf("window %q needs a start before its end", w.Title)
 		}
 		w.keys = map[string]bool{}
+		w.endpoints = make([]publicEndpoint, 0, len(w.Endpoints))
 		for _, name := range w.Endpoints {
-			endpointKey, ok := known[name]
+			endpoint, ok := known[name]
 			if !ok {
 				return fmt.Errorf("window %q names an unknown endpoint: %s", w.Title, name)
 			}
-			w.keys[endpointKey] = true
+			w.keys[endpoint.Key] = true
+			w.endpoints = append(w.endpoints, endpoint)
 		}
 	}
 	return nil
