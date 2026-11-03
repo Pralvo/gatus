@@ -219,3 +219,76 @@ func reportOf(report *record.Report, names map[string]string) reportView {
 	}
 	return view
 }
+
+// The JSON shapes below are what the public may see. They leave out who wrote a
+// report or an update, which only the admin API shows.
+
+type publicEndpoint struct {
+	Key    string        `json:"key"`
+	Name   string        `json:"name"`
+	Impact record.Impact `json:"impact"`
+}
+
+type publicUpdate struct {
+	Stage   record.Stage `json:"stage"`
+	At      time.Time    `json:"at"`
+	Message string       `json:"message"`
+}
+
+type publicReport struct {
+	ID          string           `json:"id"`
+	Title       string           `json:"title"`
+	Stage       record.Stage     `json:"stage"`
+	Endpoints   []publicEndpoint `json:"endpoints"`
+	Updates     []publicUpdate   `json:"updates"` // newest first; a list item has only the latest
+	PublishedAt time.Time        `json:"publishedAt"`
+	ResolvedAt  *time.Time       `json:"resolvedAt,omitempty"`
+	UpdatedAt   time.Time        `json:"updatedAt"`
+}
+
+type publicList struct {
+	Reports []publicReport `json:"reports"` // unresolved first, then most recently changed
+	Page    int            `json:"page"`
+	More    bool           `json:"more"`
+}
+
+func publicOf(report *record.Report, names map[string]string) publicReport {
+	out := publicReport{
+		ID:         report.ID,
+		Title:      report.Title,
+		Stage:      report.Stage,
+		Endpoints:  make([]publicEndpoint, 0, len(report.Endpoints)),
+		Updates:    make([]publicUpdate, 0, len(report.Updates)),
+		UpdatedAt: report.UpdatedAt.UTC(),
+	}
+	if report.ResolvedAt != nil {
+		resolved := report.ResolvedAt.UTC()
+		out.ResolvedAt = &resolved
+	}
+	if report.PublishedAt != nil {
+		out.PublishedAt = report.PublishedAt.UTC()
+	}
+	for _, endpoint := range report.Endpoints {
+		name, ok := names[endpoint.Key]
+		if !ok {
+			name = endpoint.Key
+		}
+		out.Endpoints = append(out.Endpoints, publicEndpoint{Key: endpoint.Key, Name: name, Impact: endpoint.Impact})
+	}
+	for i := len(report.Updates) - 1; i >= 0; i-- {
+		update := report.Updates[i]
+		out.Updates = append(out.Updates, publicUpdate{Stage: update.Stage, At: update.At.UTC(), Message: update.Message})
+	}
+	return out
+}
+
+func publicListOf(reports []*record.Report, names map[string]string, page int, more bool) publicList {
+	out := publicList{Reports: make([]publicReport, 0, len(reports)), Page: page, More: more}
+	for _, report := range reports {
+		if !report.Published() || !record.ValidID(report.ID) {
+			continue // the query already leaves drafts out; this is a second lock
+		}
+		out.Reports = append(out.Reports, publicOf(report, names))
+	}
+	return out
+}

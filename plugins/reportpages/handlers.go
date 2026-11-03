@@ -3,6 +3,7 @@ package reportpages
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -52,6 +53,8 @@ func newPages(reports reportReader, cfg Config, names map[string]string, logf fu
 func (p *pages) register(add func(pattern string, handler http.HandlerFunc)) {
 	add("GET /reports", p.list)
 	add("GET /reports/{id}", p.show)
+	add("GET /api/v1/reports", p.apiList)
+	add("GET /api/v1/reports/{id}", p.apiShow)
 }
 
 // list shows published reports: unresolved ones first, then the most recently
@@ -122,6 +125,94 @@ func (p *pages) show(w http.ResponseWriter, r *http.Request) {
 	}
 	view := reportOf(report, p.names)
 	p.write(w, http.StatusOK, cacheFor, "report", view.Title, view)
+}
+
+// apiList is list as JSON for the page's own scripts. Unlike the HTML list, a page
+// past the end is an empty list, and a malformed page number is a 400.
+func (p *pages) apiList(w http.ResponseWriter, r *http.Request) {
+	page, ok := pageNumber(r.URL.Query().Get("page"))
+	if !ok {
+		p.writeJSON(w, http.StatusBadRequest, "no-store", apiError{Error: "page must be a whole number from 1 to 1000"})
+		return
+	}
+	if p.reports == nil {
+		p.apiUnavailable(w)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), readTimeout)
+	defer cancel()
+	reports, err := p.reports.ListReports(ctx, record.ReportFilter{
+		PublishedOnly: true,
+		Limit:         p.pageSize + 1,
+		Offset:        (page - 1) * p.pageSize,
+	})
+	if err != nil {
+		p.readFailed(err)
+		p.apiUnavailable(w)
+		return
+	}
+	p.readWorked()
+	more := len(reports) > p.pageSize
+	if more {
+		reports = reports[:p.pageSize]
+	}
+	p.writeJSON(w, http.StatusOK, cacheFor, publicListOf(reports, p.names, page, more))
+}
+
+// apiShow is show as JSON. A draft looks exactly like a report that does not exist.
+func (p *pages) apiShow(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if !record.ValidID(id) {
+		p.writeJSON(w, http.StatusNotFound, cacheFor, apiError{Error: "report not found"})
+		return
+	}
+	if p.reports == nil {
+		p.apiUnavailable(w)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), readTimeout)
+	defer cancel()
+	report, err := p.reports.GetReport(ctx, id)
+	switch {
+	case errors.Is(err, record.ErrNotFound):
+		p.readWorked()
+		p.writeJSON(w, http.StatusNotFound, cacheFor, apiError{Error: "report not found"})
+		return
+	case err != nil:
+		p.readFailed(err)
+		p.apiUnavailable(w)
+		return
+	}
+	p.readWorked()
+	if !report.Published() {
+		p.writeJSON(w, http.StatusNotFound, cacheFor, apiError{Error: "report not found"})
+		return
+	}
+	p.writeJSON(w, http.StatusOK, cacheFor, publicOf(report, p.names))
+}
+
+type apiError struct {
+	Error string `json:"error"`
+}
+
+func (p *pages) apiUnavailable(w http.ResponseWriter) {
+	w.Header().Set("Retry-After", retryAfter)
+	p.writeJSON(w, http.StatusServiceUnavailable, "no-store", apiError{Error: "reports are unavailable"})
+}
+
+// writeJSON encodes the whole body before sending anything, like write.
+func (p *pages) writeJSON(w http.ResponseWriter, status int, cacheControl string, body any) {
+	out, err := json.Marshal(body)
+	if err != nil {
+		p.logf("encode report JSON: %s", err.Error())
+		status, cacheControl, out = http.StatusInternalServerError, "no-store", []byte(`{"error":"this response could not be made"}`)
+	}
+	header := w.Header()
+	header.Set("Content-Type", "application/json")
+	header.Set("Cache-Control", cacheControl)
+	header.Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(status)
+	_, _ = w.Write(out)
 }
 
 func (p *pages) notFound(w http.ResponseWriter) {

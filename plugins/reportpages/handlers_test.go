@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -254,6 +255,105 @@ func TestBadConfigFailsByName(t *testing.T) {
 		h := plugintest.Load(t, Definition, configYAML, core())
 		if got := h.Host.Statuses()[0]; got.State != plugin.StateFailed {
 			t.Fatalf("%q: %+v", configYAML, got)
+		}
+	}
+}
+
+func TestAPIShowsAPublishedReportWithoutItsAuthors(t *testing.T) {
+	report := published("Slow reads", record.StageMonitoring, record.AffectedEndpoint{Key: "core_database", Impact: record.ImpactPartial})
+	report.CreatedBy = "owner-name"
+	report.Updates[0].Actor = "owner-name"
+	report.Updates[1].Message = hostile
+	h := start(t, &fake{reports: []*record.Report{report}}, "")
+	response := h.Get("/api/v1/reports/" + report.ID)
+	body := response.Body.String()
+	if response.Code != http.StatusOK || response.Header().Get("Content-Type") != "application/json" {
+		t.Fatalf("%d %q %s", response.Code, response.Header().Get("Content-Type"), body)
+	}
+	if strings.Contains(body, "owner-name") || strings.Contains(body, "actor") || strings.Contains(body, "created") {
+		t.Fatalf("an author reached the public JSON: %s", body)
+	}
+	if strings.Contains(body, "<script") {
+		t.Fatalf("stored markup was not escaped: %s", body)
+	}
+	var got publicReport
+	if err := json.Unmarshal(response.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != report.ID || got.Stage != record.StageMonitoring || len(got.Updates) != 2 || got.Updates[0].Message != hostile {
+		t.Fatalf("unexpected report: %+v", got)
+	}
+	if want := (publicEndpoint{Key: "core_database", Name: "core/database", Impact: record.ImpactPartial}); len(got.Endpoints) != 1 || got.Endpoints[0] != want {
+		t.Fatalf("endpoints: %+v", got.Endpoints)
+	}
+	if got.Updates[0].At.Before(got.Updates[1].At) {
+		t.Fatal("updates are not newest first")
+	}
+	if got := response.Header().Get("Cache-Control"); got != "public, max-age=30" {
+		t.Fatalf("Cache-Control: %q", got)
+	}
+}
+
+func TestAPIDraftsAndUnknownIDsLookTheSame(t *testing.T) {
+	draft := published("Secret draft", record.StageIdentified)
+	draft.PublishedAt = nil
+	service := &fake{reports: []*record.Report{draft}}
+	h := start(t, service, "")
+	for _, path := range []string{"/api/v1/reports/" + draft.ID, "/api/v1/reports/" + record.NewID()} {
+		response := h.Get(path)
+		if response.Code != http.StatusNotFound || response.Body.String() != `{"error":"report not found"}` {
+			t.Fatalf("%s: %d %s", path, response.Code, response.Body)
+		}
+	}
+	before := service.gets
+	if response := h.Get("/api/v1/reports/not-an-id"); response.Code != http.StatusNotFound || service.gets != before {
+		t.Fatalf("a malformed ID reached the database: %d", response.Code)
+	}
+	if body := h.Get("/api/v1/reports").Body.String(); strings.Contains(body, "Secret draft") {
+		t.Fatal("a draft reached the list")
+	}
+}
+
+func TestAPIListPages(t *testing.T) {
+	service := &fake{reports: []*record.Report{
+		published("One", record.StageIdentified), published("Two", record.StageResolved), published("Three", record.StageResolved),
+	}}
+	h := start(t, service, "page-size: 2")
+	var first, last publicList
+	if err := json.Unmarshal(h.Get("/api/v1/reports").Body.Bytes(), &first); err != nil {
+		t.Fatal(err)
+	}
+	if len(first.Reports) != 2 || !first.More || first.Page != 1 {
+		t.Fatalf("first page: %+v", first)
+	}
+	if err := json.Unmarshal(h.Get("/api/v1/reports?page=2").Body.Bytes(), &last); err != nil {
+		t.Fatal(err)
+	}
+	if len(last.Reports) != 1 || last.More {
+		t.Fatalf("last page: %+v", last)
+	}
+	if body := h.Get("/api/v1/reports?page=9").Body.String(); body != `{"reports":[],"page":9,"more":false}` {
+		t.Fatalf("past the end: %s", body)
+	}
+	reads := len(service.filters)
+	for _, page := range []string{"0", "abc", "01", "1001"} {
+		if response := h.Get("/api/v1/reports?page=" + page); response.Code != http.StatusBadRequest {
+			t.Fatalf("page %s: %d", page, response.Code)
+		}
+	}
+	if len(service.filters) != reads {
+		t.Fatal("a malformed page number reached the database")
+	}
+}
+
+func TestAPIDatabaseFailureGivesAnUncached503(t *testing.T) {
+	report := published("Any", record.StageIdentified)
+	h := start(t, &fake{reports: []*record.Report{report}, err: errors.New("connection refused")}, "")
+	for _, path := range []string{"/api/v1/reports", "/api/v1/reports/" + report.ID} {
+		response := h.Get(path)
+		if response.Code != http.StatusServiceUnavailable || response.Header().Get("Cache-Control") != "no-store" ||
+			response.Header().Get("Retry-After") != "30" || strings.Contains(response.Body.String(), "connection refused") {
+			t.Fatalf("%s: %d %v %s", path, response.Code, response.Header(), response.Body)
 		}
 	}
 }
