@@ -1,4 +1,4 @@
-# Changed by Pralvo: adds the plugin and dev-db targets. See docs/plugins.md.
+# Changed by Pralvo: adds the plugin, dev-db and ui targets. See docs/plugins.md.
 
 BINARY=gatus
 
@@ -62,3 +62,12 @@ frontend-build:
 .PHONY: frontend-dev
 frontend-dev:
 	npm --prefix web/app run serve
+
+# web/ui is the React interface replacing web/app.
+.PHONY: ui-install
+ui-install:
+	npm --prefix web/ui ci
+
+.PHONY: ui-check
+ui-check:
+	npm --prefix web/ui run check
