@@ -20,6 +20,7 @@ import (
 	"github.com/TwiN/gatus/v5/plugins/database/databasetest"
 	"github.com/TwiN/gatus/v5/plugins/incidents"
 	"github.com/TwiN/gatus/v5/plugins/incidents/record"
+	static "github.com/TwiN/gatus/v5/web"
 	"gopkg.in/yaml.v3"
 )
 
@@ -206,5 +207,26 @@ func TestReportPageHasLinkPreviewTags(t *testing.T) {
 	}
 	if got := shorten(strings.Repeat("word ", 60)); len([]rune(got)) > maxDescription+1 || !strings.HasSuffix(got, "…") {
 		t.Fatalf("not shortened: %q", got)
+	}
+}
+
+func TestPagesLinkTheFeedsOnlyWhenTheyRun(t *testing.T) {
+	report := published("Slow reads", record.StageMonitoring)
+	link := `<link rel="alternate" type="application/atom+xml" title="Example status (Atom)" href="/feed/atom.xml">`
+	off := start(t, &fake{reports: []*record.Report{report}}, "")
+	if body := off.Get("/reports/" + report.ID).Body.String(); strings.Contains(body, "/feed/") {
+		t.Fatalf("feeds are off but the page links them:\n%s", body)
+	}
+	withEntry(t, static.EntryAssets{})
+	services := core()
+	services[plugin.CoreConfig].(*config.Config).UI.Feeds = true
+	on := plugintest.Start(t, Definition, "", services, provider(&fake{reports: []*record.Report{report}}))
+	for _, path := range []string{"/reports", "/reports/" + report.ID} {
+		body := on.Get(path).Body.String()
+		for _, want := range []string{link, `type="application/rss+xml"`, `type="application/feed+json"`} {
+			if !strings.Contains(body, want) {
+				t.Fatalf("%s: missing %q in:\n%s", path, want, body)
+			}
+		}
 	}
 }

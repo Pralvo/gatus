@@ -13,6 +13,25 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="stylesheet" href="/css/custom.css" />
+    <!-- Feed readers find the feeds here. The rel is empty when the feeds plugin is off, so the links do nothing. -->
+    <link
+      rel="{{ if .UI.Feeds }}alternate{{ end }}"
+      type="application/atom+xml"
+      title="{{ .UI.Title }} (Atom)"
+      href="/feed/atom.xml"
+    />
+    <link
+      rel="{{ if .UI.Feeds }}alternate{{ end }}"
+      type="application/rss+xml"
+      title="{{ .UI.Title }} (RSS)"
+      href="/feed/rss.xml"
+    />
+    <link
+      rel="{{ if .UI.Feeds }}alternate{{ end }}"
+      type="application/feed+json"
+      title="{{ .UI.Title }} (JSON Feed)"
+      href="/feed/feed.json"
+    />
     <script type="application/json" id="page-config">
       {{ .PageConfig }}
     </script>
