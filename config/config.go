@@ -1,3 +1,5 @@
+// Changed by Pralvo: adds the plugins list. See docs/plugins.md.
+
 package config
 
 import (
@@ -26,6 +28,7 @@ import (
 	"github.com/TwiN/gatus/v5/config/tunneling"
 	"github.com/TwiN/gatus/v5/config/ui"
 	"github.com/TwiN/gatus/v5/config/web"
+	"github.com/TwiN/gatus/v5/plugin"
 	"github.com/TwiN/gatus/v5/security"
 	"github.com/TwiN/gatus/v5/storage"
 	"github.com/TwiN/logr"
@@ -122,6 +125,9 @@ type Config struct {
 
 	// Announcements is the list of system-wide announcements
 	Announcements []*announcement.Announcement `yaml:"announcements,omitempty"`
+
+	// Plugins is the desired list of plugins. See docs/plugins.md
+	Plugins []*plugin.Entry `yaml:"plugins,omitempty"`
 
 	configPath      string    // path to the file or directory from which config was loaded
 	lastFileModTime time.Time // last modification time

@@ -1,3 +1,5 @@
+# Changed by Pralvo: adds the plugin target. See docs/plugins.md.
+
 BINARY=gatus
 
 .PHONY: install
@@ -15,6 +17,10 @@ run-binary:
 .PHONY: clean
 clean:
 	rm $(BINARY)
+
+.PHONY: plugin
+plugin:
+	go run ./plugin/cmd/newplugin $(NAME)
 
 .PHONY: test
 test:

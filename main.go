@@ -1,3 +1,5 @@
+// Changed by Pralvo: starts and stops plugins. See docs/plugins.md.
+
 package main
 
 import (
@@ -10,6 +12,8 @@ import (
 	"github.com/TwiN/gatus/v5/config"
 	"github.com/TwiN/gatus/v5/controller"
 	"github.com/TwiN/gatus/v5/metrics"
+	"github.com/TwiN/gatus/v5/plugin"
+	_ "github.com/TwiN/gatus/v5/plugins/all"
 	"github.com/TwiN/gatus/v5/storage/store"
 	"github.com/TwiN/gatus/v5/watchdog"
 	"github.com/TwiN/logr"
@@ -41,6 +45,7 @@ func main() {
 		<-signalChannel
 		logr.Info("Received termination signal, attempting to gracefully shut down")
 		stop(cfg)
+		plugin.Default.Shutdown()
 		save()
 		done <- true
 	}()
@@ -49,6 +54,9 @@ func main() {
 }
 
 func start(cfg *config.Config) {
+	// Plugins are reconciled here, not stopped in stop(), so an unchanged plugin keeps running across a reload
+	plugin.Default.SetCore(plugin.CoreConfig, cfg)
+	plugin.Default.Reconcile(cfg.Plugins)
 	go controller.Handle(cfg)
 	metrics.InitializePrometheusMetrics(cfg, nil)
 	watchdog.Monitor(cfg)

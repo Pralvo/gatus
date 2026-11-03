@@ -1,3 +1,5 @@
+// Changed by Pralvo: adds the plugin route seam. See docs/plugins.md.
+
 package api
 
 import (
@@ -63,6 +65,7 @@ func (a *API) createRouter(cfg *config.Config) *fiber.App {
 	// Middlewares
 	app.Use(recover.New())
 	app.Use(compress.New())
+	app.Use(pluginRoutes)
 	// Define metrics handler, if necessary
 	if cfg.Metrics {
 		metricsHandler := promhttp.InstrumentMetricHandler(prometheus.DefaultRegisterer, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
