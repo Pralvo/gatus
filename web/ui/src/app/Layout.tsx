@@ -8,7 +8,7 @@ export function Layout(props: HeaderProps) {
   return (
     <>
       <a className="pralvo-skip" href="#main">
-        Skip to the status
+        Skip to the content
       </a>
       <Header {...props} />
       <main id="main" className="pralvo-main">

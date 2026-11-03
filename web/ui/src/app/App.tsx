@@ -33,7 +33,7 @@ export function App({ config, queryClient }: AppProps) {
     <PageConfigContext value={config}>
       <QueryClientProvider client={client}>
         <ThemeProvider colorMode={colorModeOf(theme)} dayScheme="light" nightScheme="dark">
-          <BaseStyles className="pralvo-root">
+          <BaseStyles className="pralvo-root pralvo-public">
             <BrowserRouter>
               <Routes>
                 <Route element={<Layout theme={theme} onTheme={choose} />}>

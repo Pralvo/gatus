@@ -5,6 +5,7 @@ import { usePageConfig } from '../../config/context'
 import { documentTitle } from '../../domain/headline/headline'
 import { atParam } from '../../domain/time/at'
 
+import home from './home.module.css'
 import { JustMeResult } from './justme/JustMeResult'
 import { useJustMe } from './justme/useJustMe'
 import { AnswerPanel } from './panel/AnswerPanel'
@@ -12,6 +13,7 @@ import { AtProblem, Warning } from './panel/Banners'
 import { TravelBanner } from './panel/TravelBanner'
 import { useCopy } from './panel/useCopy'
 import { AboutSection } from './sections/AboutSection'
+import { PastNotices } from './sections/PastNotices'
 import { RecordSection } from './sections/RecordSection'
 import { StorySection } from './sections/StorySection'
 import { ServicesSection, ServicesSkeleton } from './services/ServicesSection'
@@ -70,7 +72,11 @@ export function HomePage() {
   )
 }
 
-/** The warnings, then story, services and record when there is something to show, then About. */
+/**
+ * The warnings, then story, services, record and past notices when there is
+ * something to show, then About. From 1280 px the story and past notices sit
+ * in a rail beside services and the record; the reading order stays the same.
+ */
 function Body({ view }: { view: HomeView }) {
   const { phase } = view
   const configured = view.headline.kind !== 'nothing-configured'
@@ -84,11 +90,22 @@ function Body({ view }: { view: HomeView }) {
       )}
       {phase === 'loading' ? <ServicesSkeleton /> : null}
       {phase === 'ready' && configured ? (
-        <>
-          <StorySection items={view.story} reference={view.reference} past={view.travel !== null} />
-          <ServicesSection view={view} />
-          <RecordSection view={view} />
-        </>
+        <div className={home.columns ?? ''}>
+          <div className={home.railTop ?? ''}>
+            <StorySection
+              items={view.story}
+              reference={view.reference}
+              past={view.travel !== null}
+            />
+          </div>
+          <div className={home.mainColumn ?? ''}>
+            <ServicesSection view={view} />
+            <RecordSection view={view} />
+          </div>
+          <div className={home.railBottom ?? ''}>
+            <PastNotices view={view} />
+          </div>
+        </div>
       ) : null}
       {phase === 'loading' ? null : <AboutSection view={view} />}
     </>

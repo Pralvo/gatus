@@ -26,6 +26,7 @@ import { counted, failuresInRow } from './streak'
 export const queryKeys = {
   statuses: (pageSize: number) => ['statuses', pageSize] as const,
   reports: (page: number) => ['reports', page] as const,
+  reportPages: (start: number) => ['reports', 'pages', start] as const,
   report: (id: string) => ['report', id] as const,
   maintenance: ['maintenance'] as const,
   config: ['config'] as const,

@@ -9,8 +9,6 @@ import { utcClock } from '../../../domain/time/format'
 import home from '../home.module.css'
 import type { HomeView } from '../useHomeView'
 
-import { PastNotices } from './PastNotices'
-
 const all = 'all'
 
 /** "Read the story" for each report a day names, "See the page at 13:50 UTC" for each failure. */
@@ -36,7 +34,7 @@ export function dayLinks(day: RecordDay): DayLink[] {
   return [...links.values()]
 }
 
-/** "Track record": the calendar with its service filter, then past notices (spec 4.1 item 6, 4.7). */
+/** "Track record": the calendar with its service filter (spec 4.1 item 6, 4.7). Past notices follow it. */
 export function RecordSection({ view }: { view: HomeView }) {
   const [filter, setFilter] = useState(all)
   const known = view.inputs.some((input) => input.key === filter)
@@ -89,7 +87,6 @@ export function RecordSection({ view }: { view: HomeView }) {
           </div>
         )}
       </div>
-      <PastNotices view={view} />
     </section>
   )
 }

@@ -115,7 +115,7 @@ export interface ReportGroups {
   past: Report[]
 }
 
-function isResolved(report: Report): boolean {
+export function isResolved(report: Report): boolean {
   return report.stage === 'resolved' || report.resolvedAt !== undefined
 }
 
@@ -126,9 +126,4 @@ export function groupReports(reports: Report[]): ReportGroups {
     active: newestFirst.filter((report) => !isResolved(report)),
     past: newestFirst.filter(isResolved),
   }
-}
-
-/** ?page= for /reports: a whole number from 1; anything else is the first page. */
-export function reportsPageParam(raw: string | null): number {
-  return raw !== null && /^[1-9]\d{0,5}$/.test(raw) ? Number(raw) : 1
 }

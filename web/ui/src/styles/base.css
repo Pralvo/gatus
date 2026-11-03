@@ -1,4 +1,4 @@
-/* Page-wide rules from the design spec: IBM Plex Sans, underlined links, tabular figures. */
+/* Page-wide rules: IBM Plex Sans, link hierarchy, focus, motion, page widths and tabular figures. */
 
 :root {
   --fontStack-system: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -37,6 +37,8 @@ html.dark:has(#root:empty) {
   line-height: 1.5;
 }
 
+/* Links share the text colour (tint.css), so the underline is what marks
+   them, never colour alone (WCAG 2.2 SC 1.4.1). */
 .pralvo-root a {
   color: var(--fgColor-link);
   text-decoration: underline;
@@ -48,13 +50,49 @@ html.dark:has(#root:empty) {
   text-decoration-thickness: 2px;
 }
 
+/* Public pages: links in navigation, breadcrumbs and headings, and titles in
+   lists and cards (.pralvo-quiet), say by their place that they are links, so
+   they carry no underline; headings and titles show one on hover, navigation
+   keeps its own hover. Links in running text keep the underline. */
+.pralvo-public :is(h1, h2, h3, h4, h5, h6, nav) a,
+.pralvo-public a.pralvo-quiet {
+  text-decoration: none;
+}
+
+.pralvo-public :is(h1, h2, h3, h4, h5, h6) a:hover,
+.pralvo-public a.pralvo-quiet:hover {
+  text-decoration: underline;
+}
+
+/* Everything that takes focus shows a ring. :where() keeps this below any
+   component's own focus style. */
+.pralvo-root :where(a, button, summary, select, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-outlineColor);
+  outline-offset: 2px;
+}
+
+/* Motion stops for people who ask for less: spinners, skeleton pulses and fades. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .pralvo-root .num {
   font-variant-numeric: tabular-nums;
 }
 
+/* Three page classes, at Primer's medium (768 px) and xlarge (1280 px)
+   breakpoints: a phone uses the whole width; a tablet up to 960 px of
+   content; a desktop up to 1200 px, arranged in a main column and a rail
+   (.pralvo-split and the pages' own grids). */
 .pralvo-wrap {
   width: 100%;
-  max-width: 768px;
   margin: 0 auto;
   padding: 0 16px;
   box-sizing: border-box;
@@ -62,13 +100,34 @@ html.dark:has(#root:empty) {
 
 @media (min-width: 768px) {
   .pralvo-wrap {
+    max-width: 1008px;
     padding: 0 24px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .pralvo-wrap {
+    max-width: 1264px;
+    padding: 0 32px;
+  }
+
+  .pralvo-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    column-gap: 40px;
+    align-items: start;
   }
 }
 
 .pralvo-main {
   flex: 1;
   padding-top: 24px;
+}
+
+@media (min-width: 1280px) {
+  .pralvo-main {
+    padding-top: 32px;
+  }
 }
 
 .pralvo-skip {

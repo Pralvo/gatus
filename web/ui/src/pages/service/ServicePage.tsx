@@ -53,7 +53,44 @@ function Loading({ headingRef }: { headingRef: ReturnType<typeof usePageArrival>
   )
 }
 
-/** One service: its state, how it compares with normal, its checks, record, history and badges (spec 4.2). */
+interface OverviewProps {
+  view: ServiceView
+  ready: NonNullable<ServiceView['ready']>
+  past: boolean
+}
+
+/** The state, the comparison with normal and the response time: a rail beside the other two from 1280 px. */
+function Overview({ view, ready, past }: OverviewProps) {
+  const { service } = ready
+  return (
+    <div className={styles.top ?? ''}>
+      <div className={styles.state ?? ''}>
+        <StatePanel ready={ready} />
+      </div>
+      <div className={styles.side ?? ''}>
+        <NormalSection ready={ready} past={past} />
+        <WorkingSection ready={ready} />
+      </div>
+      <div className={styles.chart ?? ''}>
+        {service.normal.kind === 'not-measured' ? null : (
+          <ResponseSection
+            serviceKey={view.key}
+            events={ready.input.events}
+            reference={view.reference}
+            past={past}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * One service: its state, how it compares with normal, its checks, record,
+ * history and badges (spec 4.2). From 1280 px the comparison sits in a rail
+ * beside the state and the response time, and the record beside the history;
+ * the reading order stays the same.
+ */
 export function ServicePage() {
   const view = useServiceView()
   const { header } = usePageConfig()
@@ -85,23 +122,13 @@ export function ServicePage() {
       <ServiceH1 headingRef={headingRef}>{service.name}</ServiceH1>
       {view.atProblem === null ? null : <Warning label="Time travel" message={view.atProblem} />}
       {view.travel === null ? null : <TravelNote travel={view.travel} back={back} />}
-      <StatePanel ready={ready} />
       {view.refreshFailed === null ? null : (
         <Warning label="Refresh" message={view.refreshFailed} />
       )}
       {view.noticesFailed === null ? null : (
         <Warning label="Reports and maintenance" message={view.noticesFailed} />
       )}
-      <NormalSection ready={ready} past={past} />
-      <WorkingSection ready={ready} />
-      {service.normal.kind === 'not-measured' ? null : (
-        <ResponseSection
-          serviceKey={view.key}
-          events={ready.input.events}
-          reference={view.reference}
-          past={past}
-        />
-      )}
+      <Overview view={view} ready={ready} past={past} />
       <RecentChecks
         serviceKey={view.key}
         name={service.name}
@@ -110,12 +137,14 @@ export function ServicePage() {
         past={past}
         stale={ready.stale}
       />
-      <RecordPart view={view} />
-      <HistorySection
-        events={ready.input.events}
-        loading={view.eventsLoading}
-        reference={view.reference}
-      />
+      <div className={styles.pair ?? ''}>
+        <RecordPart view={view} />
+        <HistorySection
+          events={ready.input.events}
+          loading={view.eventsLoading}
+          reference={view.reference}
+        />
+      </div>
       {past ? null : <BadgeSection serviceKey={view.key} name={service.name} />}
     </>
   )

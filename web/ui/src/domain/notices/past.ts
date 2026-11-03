@@ -1,16 +1,12 @@
-// "Past notices" under the track record (spec 4.1): published reports and
-// maintenance of the last 14 days, newest first, one list per UTC day. A
-// report sits on the day it last changed by the end moment, with the stage it
-// had then. Upcoming maintenance is left out: the page says what is and what
-// was, never what is next.
+// "Past notices" (spec 4.1): published reports and maintenance as they stood
+// at the end moment. A report sits on the moment it last changed by then, with
+// the stage it had then. Upcoming maintenance is left out: the page says what
+// is and what was, never what is next. Grouping by month, filters and search
+// are in domain/browse.
 
 import type { MaintenanceWindow, Report, ReportStage } from '../../api/plugins/types'
-import { dayMs, startOfUtcDay } from '../time/format'
 
 import { stageWord } from './reports'
-
-export const pastNoticesDays = 14
-export const noNoticesText = 'No notices'
 
 export type NoticeItem =
   | {
@@ -29,20 +25,11 @@ export type NoticeItem =
       end: number
     }
 
-export interface NoticeDay {
-  /** Midnight UTC. */
-  start: number
-  /** Newest first. */
-  items: NoticeItem[]
-}
-
 export interface PastNoticesInput {
   reports: Report[]
   windows: MaintenanceWindow[]
   /** Now, or the time-travel moment: nothing after it is shown. */
   end: number
-  /** How many days to list, today included. */
-  days?: number
 }
 
 /** A report as it stood at the end moment, or null if it was not yet published. */
@@ -68,7 +55,7 @@ function reportItem(report: Report, end: number): NoticeItem | null {
 }
 
 /** A window that had begun by the end moment; in progress sits on its start, finished on its end. */
-function windowItem(window: MaintenanceWindow, end: number, firstDay: number): NoticeItem | null {
+function windowItem(window: MaintenanceWindow, end: number): NoticeItem | null {
   if (window.start > end) {
     return null
   }
@@ -77,29 +64,19 @@ function windowItem(window: MaintenanceWindow, end: number, firstDay: number): N
     kind: 'maintenance',
     title: window.title,
     state: finished ? 'finished' : 'in-progress',
-    at: finished ? window.end : Math.max(window.start, firstDay),
+    at: finished ? window.end : window.start,
     end: window.end,
   }
 }
 
-/** The notices of the last days up to `end`, newest day first. Days without notices are kept, empty. */
-export function pastNotices(input: PastNoticesInput): NoticeDay[] {
-  const count = Math.max(1, input.days ?? pastNoticesDays)
-  const lastDay = startOfUtcDay(input.end)
-  const firstDay = lastDay - (count - 1) * dayMs
-  const items = [
+/** Every notice up to `end`, newest first. */
+export function noticeItems(input: PastNoticesInput): NoticeItem[] {
+  return [
     ...input.reports.map((report) => reportItem(report, input.end)),
-    ...input.windows.map((window) => windowItem(window, input.end, firstDay)),
-  ].filter(
-    (item): item is NoticeItem => item !== null && item.at >= firstDay && item.at <= input.end,
-  )
-  return Array.from({ length: count }, (_, index) => {
-    const start = lastDay - index * dayMs
-    return {
-      start,
-      items: items.filter((item) => startOfUtcDay(item.at) === start).sort((a, b) => b.at - a.at),
-    }
-  })
+    ...input.windows.map((window) => windowItem(window, input.end)),
+  ]
+    .filter((item): item is NoticeItem => item !== null && item.at <= input.end)
+    .sort((a, b) => b.at - a.at)
 }
 
 /** The label beside a notice: "Resolved", "Investigating", "Maintenance finished", ... */

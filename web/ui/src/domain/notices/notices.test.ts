@@ -5,14 +5,7 @@ import { at, report, results } from '../../test/fixtures'
 import { momentAt, serviceStatuses } from '../status/service'
 
 import { covers, windowFor, windowsAt, windowsDuring } from './maintenance'
-import {
-  groupReports,
-  impactOn,
-  impactWord,
-  reportsAt,
-  reportsPageParam,
-  stageWord,
-} from './reports'
+import { groupReports, impactOn, impactWord, reportsAt, stageWord } from './reports'
 
 const updated = report({
   stage: 'resolved',
@@ -119,21 +112,6 @@ describe('groupReports', () => {
   it('treats a report with a resolution time as past whatever its stage says', () => {
     const odd = report({ resolvedAt: at(80), updatedAt: at(80) })
     expect(groupReports([odd])).toEqual({ active: [], past: [odd] })
-  })
-})
-
-describe('reportsPageParam', () => {
-  it.each([
-    [null, 1],
-    ['2', 2],
-    ['0', 1],
-    ['-3', 1],
-    ['1.5', 1],
-    ['abc', 1],
-    ['02', 1],
-    ['9999999', 1],
-  ])('reads %s as page %i', (raw, page) => {
-    expect(reportsPageParam(raw)).toBe(page)
   })
 })
 
