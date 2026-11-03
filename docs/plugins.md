@@ -30,6 +30,7 @@ A plugin that cannot run never stops the status page. It is logged with a state 
 |---|---|---|
 | `database` | A SQL connection for other plugins, separate from Gatus's history store | SQLite file or Postgres server |
 | `feeds` | Publishes notices at `/feed/atom.xml`, `/feed/rss.xml` and `/feed/feed.json` | Nothing |
+| `incidents` | Internal incidents and public reports, with a token API and notices | `database` |
 | `maintenance-windows` | Dated maintenance on the status page, with optional alert silencing | Nothing |
 
 ```yaml
@@ -74,6 +75,94 @@ plugins:
 ```
 
 A window silences alerts and shows a notice. Checks keep running during the window, so a failure still shows red on the page.
+
+```yaml
+plugins:
+  - name: database
+    config:
+      type: postgres
+      path: ${PLUGIN_DATABASE_DSN}
+  - name: incidents
+    config:
+      trusted-proxies: 0        # how many proxies sit in front of Gatus
+      tokens:
+        - name: alice           # recorded as the actor on everything this token does
+          sha256: <hex SHA-256 of the token>
+```
+
+`incidents` keeps two records, and changing one never changes the other:
+
+- An **incident** is internal: title, severity, commander, state, a timeline that only grows, and a Markdown postmortem.
+- A **report** is public: title, stage, affected endpoints with an impact on each, and dated updates. It stays a draft until published.
+
+Published reports appear as notices on the status page. A notice links to `/reports/{id}`, a page this plugin does not serve. Resolved reports stay in the past notices for 30 days. The page reads a copy of the notices that a job refreshes, so a slow or dead database never holds it up. If reads fail, the last good copy stays up.
+
+#### Tokens
+
+A token is a random secret. The configuration holds only its hash, so it holds nothing that can be used to sign in. Use a generated secret and never a password, because the hash has no salt:
+
+```sh
+token=$(openssl rand -hex 32)
+printf %s "$token" | sha256sum   # goes in the configuration; printf adds no newline
+```
+
+Send the token as `Authorization: Bearer <token>`. Every route below needs it, including reads. After 10 failed attempts from one address in a minute, that address gets `429` until the minute ends. Behind proxies, set `trusted-proxies` to how many there are, so each client is counted by its own address. Left at 0, every client behind a proxy shares one limit.
+
+#### API
+
+Every request and response body is JSON, up to 1 MiB, and unknown fields are refused.
+
+| Route | Body | Does |
+|---|---|---|
+| `POST /api/v1/admin/incidents` | `title`, `severity`, optional `commander`, `report_id` | Opens an incident |
+| `GET /api/v1/admin/incidents` | Query: `state`, `limit`, `offset` | Lists incidents, without timelines |
+| `GET /api/v1/admin/incidents/{id}` | | Returns an incident with its timeline |
+| `PATCH /api/v1/admin/incidents/{id}` | Any of `title`, `severity`, `commander`, `postmortem`, `report_id` | Edits an incident. An empty `commander` or `report_id` clears it |
+| `POST /api/v1/admin/incidents/{id}/state` | `state` | Moves an incident |
+| `POST /api/v1/admin/incidents/{id}/notes` | `note` | Adds a note to the timeline |
+| `POST /api/v1/admin/reports` | `title`, `stage`, `message`, optional `endpoints`, `published` | Starts a report |
+| `GET /api/v1/admin/reports` | Query: `stage`, `published=true`, `limit`, `offset` | Lists reports with their latest update |
+| `GET /api/v1/admin/reports/{id}` | | Returns a report with every update |
+| `PATCH /api/v1/admin/reports/{id}` | Any of `title`, `endpoints` | Edits a report |
+| `POST /api/v1/admin/reports/{id}/updates` | `stage`, `message` | Adds an update, which sets the stage |
+| `PUT /api/v1/admin/reports/{id}/publication` | `published` | Publishes a report or returns it to draft |
+
+Values: `severity` is `critical`, `major` or `minor`. `state` is `open`, `mitigated`, `resolved`, `cancelled` or `closed`. `stage` is `investigating`, `identified`, `monitoring` or `resolved`. `endpoints` is a list of `{"key": "core_database", "impact": "major"}`, where `impact` is `degraded`, `partial`, `major` or `maintenance`.
+
+An incident moves between open, mitigated, resolved and cancelled, and can go back to open from any of them. It closes from resolved or cancelled, and a closed incident can no longer change. A key in `endpoints` must exist in the configuration when it is first added, and stays on the report if the endpoint later goes.
+
+Errors look like `{"error": "frozen", "message": "..."}`:
+
+| Status | `error` |
+|---|---|
+| 400 | `invalid`, `unknown_endpoint` |
+| 401 | `unauthorized` |
+| 404 | `not_found` |
+| 409 | `invalid_transition`, `frozen` |
+| 413 | `too_large` |
+| 429 | `rate_limited` |
+| 503 | `unavailable`: the database failed |
+
+#### Build on it
+
+Other plugins import `plugins/incidents/record`, which needs no SQL driver:
+
+```go
+var Definition = plugin.Definition{
+	Name:  "slack",
+	Needs: []plugin.Key{"incidents"},
+	Start: func(ctx *plugin.Context) error {
+		service := plugin.Get[record.Service](ctx, "incidents")
+		ctx.On(record.TopicReportPublished, func(event plugin.Event) {
+			report := event.Data.(record.ReportEvent).Report
+			// ...
+		})
+		return nil
+	},
+}
+```
+
+Treat all stored text as untrusted, and render it only through escaping. Drafts raise events and appear in `GetReport`, so anything public must check `Published`. Events are not durable: one is lost if the process stops at the wrong moment.
 
 ## Write a plugin
 
