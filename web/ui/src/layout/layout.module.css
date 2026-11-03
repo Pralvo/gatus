@@ -31,7 +31,11 @@
 }
 
 .nav a {
-  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 8px;
+  box-sizing: border-box;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
@@ -42,6 +46,7 @@
 .nav a:hover {
   background: var(--bgColor-muted);
   color: var(--fgColor-default);
+  text-decoration: none;
 }
 
 .nav a[aria-current='page'] {
@@ -92,4 +97,14 @@
 .sourceIcon:hover {
   background: var(--bgColor-muted);
   color: var(--fgColor-default);
+}
+
+/* From a tablet up the footer is one row: links, feeds and the source icon. */
+@media (min-width: 768px) {
+  .footerColumn {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 24px;
+  }
 }

@@ -9,12 +9,19 @@ import { UtcTime } from '../common/UtcTime'
 
 import styles from './list.module.css'
 
+export interface ReportSummaryProps {
+  report: Report
+  now: number
+  /** The title's heading level: 3 under "Active", 4 under a month of "Past". */
+  level: 3 | 4
+}
+
 /** One report in the list: title link, stage, last change, latest update and services. */
-export function ReportSummary({ report, now }: { report: Report; now: number }) {
+export function ReportSummary({ report, now, level }: ReportSummaryProps) {
   const latest = report.updates[0]
   return (
     <li className={styles.item ?? ''}>
-      <Heading as="h3" className={styles.title ?? ''}>
+      <Heading as={level === 3 ? 'h3' : 'h4'} className={styles.title ?? ''}>
         <Link to={`/reports/${encodeURIComponent(report.id)}`}>{report.title}</Link>
       </Heading>
       <p className={styles.meta ?? ''}>

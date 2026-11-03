@@ -1,0 +1,31 @@
+/* Filters above a list of notices or reports. Laid out by the room they get,
+   not the window: a side rail and a phone get one column, a wide column two. */
+
+.filters {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.kind {
+  display: grid;
+  gap: 4px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@container (min-width: 480px) {
+  .filters {
+    grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);
+    align-items: end;
+  }
+
+  .kind {
+    grid-column: 1 / -1;
+  }
+}

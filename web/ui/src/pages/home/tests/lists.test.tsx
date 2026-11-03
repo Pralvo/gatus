@@ -44,7 +44,7 @@ describe('services list', () => {
     serve(pralvoEstate())
     renderHome()
     await loaded()
-    expect(screen.queryByRole('searchbox')).toBeNull()
+    expect(screen.queryByRole('searchbox', { name: 'Search' })).toBeNull()
   })
 
   it('searches into ?q= and filters into Gatus storage keys', async () => {
@@ -132,17 +132,72 @@ describe('track record', () => {
     )
   })
 
-  it('lists past notices and shows older ones on request', async () => {
+  const finished = (title: string, month: number, day: number) => ({
+    title,
+    start: Date.UTC(2026, month - 1, day, 10),
+    end: Date.UTC(2026, month - 1, day, 11),
+    state: 'finished' as const,
+    endpoints: [],
+  })
+  function noticesEstate() {
+    const estate = recordEstate()
+    estate.windows = [finished('Media move', 10, 15), finished('Database upgrade', 9, 20)]
+    return estate
+  }
+  // The kind switch is a list of buttons too, so read the days from the month lists.
+  const daysIn = (region: HTMLElement) => [...region.querySelectorAll('ol > li')]
+  const monthsIn = (region: HTMLElement) =>
+    within(region)
+      .queryAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent)
+
+  it('lists past notices by month, only on days that have some, and shows older months', async () => {
     setNow()
-    serve(recordEstate())
+    serve(noticesEstate())
     const { user } = renderHome()
     await loaded()
-    const notices = screen.getByRole('heading', { name: 'Past notices' }).nextElementSibling
-    const days = within(notices as HTMLElement).getAllByRole('listitem')
-    expect(days).toHaveLength(14)
+    const notices = screen.getByRole('region', { name: 'Past notices' })
+    expect(monthsIn(notices)).toEqual(['November 2026', 'October 2026'])
+    const days = daysIn(notices)
+    expect(days).toHaveLength(2)
     expect(days[0]).toHaveTextContent('2 NovResolved13:59 UTCImages were slow to load')
-    expect(days[1]).toHaveTextContent('1 NovNo notices')
-    await user.click(screen.getByRole('button', { name: 'Show older notices' }))
-    expect(within(notices as HTMLElement).getAllByRole('listitem')).toHaveLength(28)
+    expect(days[1]).toHaveTextContent(/^15 OctMaintenance finished.*Media move$/)
+    await user.click(within(notices).getByRole('button', { name: 'Show older notices' }))
+    expect(monthsIn(notices)).toEqual(['November 2026', 'October 2026', 'September 2026'])
+    expect(window.location.search).toBe('?months=3')
+    expect(within(notices).queryByRole('button', { name: 'Show older notices' })).toBeNull()
+  })
+
+  it('filters past notices by kind, state and title, and keeps the view in the address', async () => {
+    setNow()
+    serve(noticesEstate())
+    const { user } = renderHome()
+    await loaded()
+    const notices = screen.getByRole('region', { name: 'Past notices' })
+    await user.click(within(notices).getByRole('button', { name: 'Maintenance' }))
+    expect(within(notices).queryByRole('link', { name: 'Images were slow to load' })).toBeNull()
+    expect(monthsIn(notices)).toEqual(['October 2026'])
+    expect(window.location.search).toBe('?kind=maintenance')
+    await user.selectOptions(within(notices).getByRole('combobox', { name: 'State' }), 'unresolved')
+    expect(
+      within(notices).getByText('No notices match these filters since October 2026.'),
+    ).toBeVisible()
+    await user.selectOptions(within(notices).getByRole('combobox', { name: 'State' }), 'all')
+    await user.type(within(notices).getByRole('searchbox', { name: 'Search titles' }), 'MEDIA mo')
+    expect(daysIn(notices)).toHaveLength(1)
+    expect(window.location.search).toBe('?kind=maintenance&search=MEDIA+mo')
+    expect(within(notices).getByRole('searchbox', { name: 'Search titles' })).toHaveFocus()
+  })
+
+  it('opens a shared view from the address, ignoring values it cannot read', async () => {
+    setNow()
+    serve(noticesEstate())
+    renderHome('/?kind=reports&state=nonsense&search=images&months=x')
+    await loaded()
+    const notices = screen.getByRole('region', { name: 'Past notices' })
+    expect(monthsIn(notices)).toEqual(['November 2026'])
+    expect(within(notices).getByRole('link', { name: 'Images were slow to load' })).toBeVisible()
+    expect(within(notices).getByRole('combobox', { name: 'State' })).toHaveValue('all')
+    expect(within(notices).getByRole('searchbox', { name: 'Search titles' })).toHaveValue('images')
   })
 })

@@ -1,14 +1,18 @@
-import { Banner, Heading, Spinner } from '@primer/react'
-import { Link, useSearchParams } from 'react-router'
+import { Banner, Button, Heading, Spinner } from '@primer/react'
+import { useSearchParams } from 'react-router'
 
 import type { Report } from '../../../api/plugins/types'
+import { NoticeFilters } from '../../../components/NoticeFilters/NoticeFilters'
 import { usePageConfig } from '../../../config/context'
 import { useNow } from '../../../data/cycle'
-import { isNotFound, useReportsPage } from '../../../data/service'
+import { useReportPages, type ReportPages } from '../../../data/service'
+import { searchWords } from '../../../domain/browse/filter'
+import { shownFrom, utcMonth, type Month } from '../../../domain/browse/months'
+import { browseReports } from '../../../domain/browse/pages'
+import { readBrowseQuery, writeBrowseQuery, type BrowseQuery } from '../../../domain/browse/query'
 import { refreshFailedMessage } from '../../../domain/freshness/refresh'
-import { groupReports, reportsPageParam } from '../../../domain/notices/reports'
 import commonStyles from '../common/common.module.css'
-import { usePageArrival } from '../common/usePageArrival'
+import { stayOnPage, usePageArrival } from '../common/usePageArrival'
 
 import styles from './list.module.css'
 import { ReportSummary } from './ReportSummary'
@@ -16,21 +20,50 @@ import { ReportSummary } from './ReportSummary'
 export const unavailableMessage =
   'Reports are unavailable right now. Service checks on the status page are not affected.'
 
-function Group({ title, reports, now }: { title: string; reports: Report[]; now: number }) {
+function Active({ reports, now }: { reports: Report[]; now: number }) {
   if (reports.length === 0) {
     return null
   }
-  const id = `reports-${title.toLowerCase()}`
   return (
-    <section className={commonStyles.section ?? ''} aria-labelledby={id}>
-      <Heading as="h2" id={id} className={commonStyles.h2 ?? ''}>
-        {title}
+    <section className={styles.group ?? ''} aria-labelledby="reports-active">
+      <Heading as="h2" id="reports-active" className={commonStyles.h2 ?? ''}>
+        Active
       </Heading>
       <ul className={styles.list ?? ''}>
         {reports.map((report) => (
-          <ReportSummary key={report.id} report={report} now={now} />
+          <ReportSummary key={report.id} report={report} now={now} level={3} />
         ))}
       </ul>
+    </section>
+  )
+}
+
+function Past({ months, now }: { months: Month<Report>[]; now: number }) {
+  if (months.length === 0) {
+    return null
+  }
+  return (
+    <section className={styles.group ?? ''} aria-labelledby="reports-past">
+      <Heading as="h2" id="reports-past" className={commonStyles.h2 ?? ''}>
+        Past
+      </Heading>
+      {months.map((month) => {
+        const id = `reports-month-${String(month.start)}`
+        return (
+          <section key={month.start} className={styles.month ?? ''} aria-labelledby={id}>
+            <Heading as="h3" id={id} className={styles.monthHeading ?? ''}>
+              {utcMonth(month.start)}
+            </Heading>
+            <ul className={styles.list ?? ''}>
+              {month.days
+                .flatMap((day) => day.entries)
+                .map((report) => (
+                  <ReportSummary key={report.id} report={report} now={now} level={4} />
+                ))}
+            </ul>
+          </section>
+        )
+      })}
     </section>
   )
 }
@@ -48,107 +81,137 @@ function Feeds() {
   )
 }
 
-interface ListState {
-  page: number
+interface ListProps {
+  pages: ReportPages
+  query: BrowseQuery
+  from: number
   now: number
-  reports: Report[]
-  loading: boolean
-  /** Nothing loaded and the request failed. */
-  failed: boolean
-  /** Shown above loaded data when the latest refresh failed. */
-  stale: string | null
-  retry: () => void
+  onChange: (query: BrowseQuery) => void
 }
 
-function ListBody({ page, now, reports, loading, failed, stale, retry }: ListState) {
-  if (loading) {
+function ListBody({ pages, query, from, now, onChange }: ListProps) {
+  if (pages.pending) {
     return (
       <p className={commonStyles.muted ?? ''}>
         <Spinner size="small" srText={null} /> Loading reports…
       </p>
     )
   }
-  if (failed) {
+  if (pages.failed && pages.reports.length === 0) {
     return (
       <Banner
         variant="critical"
         title="Reports unavailable"
         hideTitle
         description={unavailableMessage}
-        primaryAction={<Banner.PrimaryAction onClick={retry}>Try again</Banner.PrimaryAction>}
+        primaryAction={<Banner.PrimaryAction onClick={pages.retry}>Try again</Banner.PrimaryAction>}
       />
     )
   }
-  if (reports.length === 0) {
-    return page === 1 ? (
-      <p>No reports have been published.</p>
-    ) : (
-      <p>
-        There are no reports on this page. <Link to="/reports">See the newest reports</Link>
-      </p>
-    )
+  if (pages.reports.length === 0) {
+    return <p>No reports have been published.</p>
   }
-  const groups = groupReports(reports)
+  return <Loaded pages={pages} query={query} from={from} now={now} onChange={onChange} />
+}
+
+/** One line when nothing is listed, with a way back when filters hid everything. */
+function EmptyLine({ query, from, onChange }: Omit<ListProps, 'pages' | 'now'>) {
+  const filtered = query.state !== 'all' || searchWords(query.search).length > 0
+  const since = `since ${utcMonth(from)}`
+  if (!filtered) {
+    return <p className={styles.empty ?? ''}>No reports {since}.</p>
+  }
+  return (
+    <p className={styles.empty ?? ''}>
+      No reports match these filters {since}.{' '}
+      <Button
+        variant="link"
+        onClick={() => {
+          onChange({ ...query, state: 'all', search: '' })
+        }}
+      >
+        Clear filters
+      </Button>
+    </p>
+  )
+}
+
+function Loaded({ pages, query, from, now, onChange }: ListProps) {
+  const view = browseReports(pages.reports, query, from, pages.more)
+  const empty = view.active.length === 0 && view.past.length === 0
   return (
     <>
-      {stale === null ? null : (
-        <Banner variant="warning" title="Not refreshed" hideTitle description={stale} />
-      )}
-      <Group title="Active" reports={groups.active} now={now} />
-      <Group title="Past" reports={groups.past} now={now} />
+      {pages.failed ? (
+        <Banner
+          variant="warning"
+          title="Not refreshed"
+          hideTitle
+          description={refreshFailedMessage(
+            { lastSuccessAt: pages.updatedAt, failuresInRow: 1 },
+            now,
+          )}
+        />
+      ) : null}
+      {empty ? <EmptyLine query={query} from={from} onChange={onChange} /> : null}
+      <Active reports={view.active} now={now} />
+      <Past months={view.past} now={now} />
+      <div className={styles.paging ?? ''}>
+        {view.older ? (
+          <Button
+            onClick={() => {
+              onChange({ ...query, months: query.months + 1 })
+            }}
+          >
+            Show older reports
+          </Button>
+        ) : null}
+        <span role="status" className={commonStyles.muted ?? ''}>
+          {pages.loadingOlder ? (
+            <>
+              <Spinner size="small" srText={null} /> Loading older reports…
+            </>
+          ) : null}
+        </span>
+      </div>
     </>
   )
 }
 
-function Paging({ page, more }: { page: number; more: boolean }) {
-  if (page === 1 && !more) {
-    return null
-  }
-  return (
-    <nav aria-label="Pages of reports" className={styles.paging ?? ''}>
-      {page > 1 ? (
-        <Link to={page === 2 ? '/reports' : `/reports?page=${String(page - 1)}`}>
-          Newer reports
-        </Link>
-      ) : (
-        <span />
-      )}
-      {more ? <Link to={`/reports?page=${String(page + 1)}`}>Older reports</Link> : null}
-    </nav>
-  )
-}
-
-/** /reports?page=n (spec 4.4): open reports, then past ones, newest change first. */
+/**
+ * /reports (spec 4.4): open reports, then past ones month by month, with a
+ * state filter and a title search kept in the URL (?state=, ?search=,
+ * ?months=). "Show older reports" adds a month, paging in as needed.
+ */
 export function ReportsPage() {
   const { header } = usePageConfig()
-  const [params] = useSearchParams()
-  const page = reportsPageParam(params.get('page'))
-  const query = useReportsPage(page)
+  const [params, setParams] = useSearchParams()
+  const query = readBrowseQuery(params)
   const now = useNow()
-  const heading = usePageArrival(`Reports · ${header}`, !query.isPending)
-  // A server without the reports plugin answers 404: it has published nothing.
-  const missing = query.isError && isNotFound(query.error)
-  const loaded = missing ? undefined : query.data
-  const state: ListState = {
-    page,
-    now,
-    reports: loaded?.reports ?? [],
-    loading: query.isPending,
-    failed: !query.isPending && !missing && loaded === undefined,
-    stale:
-      loaded !== undefined && query.isError
-        ? refreshFailedMessage({ lastSuccessAt: query.dataUpdatedAt, failuresInRow: 1 }, now)
-        : null,
-    retry: () => void query.refetch(),
+  const from = shownFrom(now, query.months)
+  const pages = useReportPages({ from, live: true })
+  const heading = usePageArrival(`Reports · ${header}`, !pages.pending)
+  const change = (next: BrowseQuery) => {
+    setParams(writeBrowseQuery(params, next), {
+      replace: true,
+      preventScrollReset: true,
+      state: stayOnPage,
+    })
   }
+  const filterable = pages.reports.length > 0
   return (
     <>
       <Heading as="h1" ref={heading} tabIndex={-1} className={commonStyles.h1 ?? ''}>
         Reports
       </Heading>
-      <Feeds />
-      <ListBody {...state} />
-      <Paging page={page} more={loaded?.more === true} />
+      <div className={styles.layout ?? ''}>
+        <div className={styles.rail ?? ''}>
+          {filterable ? <NoticeFilters label="Reports" query={query} onChange={change} /> : null}
+          <Feeds />
+        </div>
+        <div className={styles.results ?? ''}>
+          <ListBody pages={pages} query={query} from={from} now={now} onChange={change} />
+        </div>
+      </div>
     </>
   )
 }

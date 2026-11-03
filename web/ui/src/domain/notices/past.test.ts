@@ -4,7 +4,7 @@ import type { MaintenanceWindow } from '../../api/plugins/types'
 import { at, base, report } from '../../test/fixtures'
 import { dayMs } from '../time/format'
 
-import { noticeLabel, pastNotices } from './past'
+import { noticeItems, noticeLabel } from './past'
 
 const day = (offset: number) => base - (base % dayMs) + offset * dayMs
 
@@ -19,13 +19,9 @@ function window(overrides: Partial<MaintenanceWindow> = {}): MaintenanceWindow {
   }
 }
 
-describe('pastNotices', () => {
-  it('lists 14 days, newest first, keeping empty days', () => {
-    const days = pastNotices({ reports: [], windows: [], end: at(60) })
-    expect(days).toHaveLength(14)
-    expect(days[0]?.start).toBe(day(0))
-    expect(days[13]?.start).toBe(day(-13))
-    expect(days.every((entry) => entry.items.length === 0)).toBe(true)
+describe('noticeItems', () => {
+  it('lists nothing when nothing was published', () => {
+    expect(noticeItems({ reports: [], windows: [], end: at(60) })).toEqual([])
   })
 
   it('puts a resolved report on the day it was resolved, as resolved', () => {
@@ -38,7 +34,7 @@ describe('pastNotices', () => {
         { stage: 'investigating', at: at(44), message: 'Looking.' },
       ],
     })
-    const [today] = pastNotices({ reports: [resolved], windows: [], end: at(90) })
+    const today = { items: noticeItems({ reports: [resolved], windows: [], end: at(90) }) }
     expect(today?.items).toEqual([
       {
         kind: 'report',
@@ -61,11 +57,11 @@ describe('pastNotices', () => {
         { stage: 'investigating', at: at(44), message: 'Looking.' },
       ],
     })
-    const [today] = pastNotices({ reports: [resolved], windows: [], end: at(50) })
+    const today = { items: noticeItems({ reports: [resolved], windows: [], end: at(50) }) }
     expect(today?.items).toMatchObject([{ stage: 'investigating', at: at(44) }])
   })
 
-  it('leaves out reports published after the end and notices older than the days shown', () => {
+  it('leaves out reports published after the end, and keeps older ones, newest first', () => {
     const later = report({ id: 'later', publishedAt: at(100), updates: [], updatedAt: at(100) })
     const old = report({
       id: 'old',
@@ -73,30 +69,28 @@ describe('pastNotices', () => {
       updatedAt: day(-20),
       updates: [],
     })
-    const days = pastNotices({ reports: [later, old], windows: [], end: at(60) })
-    expect(days.flatMap((entry) => entry.items)).toEqual([])
-    const wider = pastNotices({ reports: [old], windows: [], end: at(60), days: 28 })
-    expect(wider.flatMap((entry) => entry.items)).toHaveLength(1)
+    const recent = report({ id: 'recent', publishedAt: at(10), updates: [], updatedAt: at(10) })
+    const items = noticeItems({ reports: [old, later, recent], windows: [], end: at(60) })
+    expect(items.map((item) => item.at)).toEqual([at(10), day(-20)])
   })
 
   it('says "Published" when no update by then gives a stage', () => {
     const unknown = report({ updates: [], updatedAt: at(100) })
-    const items = pastNotices({ reports: [unknown], windows: [], end: at(60) })[0]?.items ?? []
+    const items = noticeItems({ reports: [unknown], windows: [], end: at(60) })
     expect(items).toMatchObject([{ stage: null, at: at(44) }])
     expect(items[0] && noticeLabel(items[0])).toBe('Published')
   })
 
   it('lists maintenance in progress on its start and finished on its end, never upcoming', () => {
-    const items =
-      pastNotices({
-        reports: [],
-        windows: [
-          window(),
-          window({ title: 'Earlier', start: at(-60), end: at(-30) }),
-          window({ title: 'Upcoming', start: at(200), end: at(260) }),
-        ],
-        end: at(60),
-      })[0]?.items ?? []
+    const items = noticeItems({
+      reports: [],
+      windows: [
+        window(),
+        window({ title: 'Earlier', start: at(-60), end: at(-30) }),
+        window({ title: 'Upcoming', start: at(200), end: at(260) }),
+      ],
+      end: at(60),
+    })
     expect(items.map((item) => [item.title, noticeLabel(item), item.at])).toEqual([
       ['Database upgrade', 'Maintenance in progress', at(30)],
       ['Earlier', 'Maintenance finished', at(-30)],

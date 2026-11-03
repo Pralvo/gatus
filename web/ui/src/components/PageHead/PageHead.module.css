@@ -16,6 +16,12 @@
   overflow-wrap: anywhere;
 }
 
+@media (min-width: 1280px) {
+  .h1 {
+    font-size: 24px;
+  }
+}
+
 .h1:focus {
   outline: none;
 }

@@ -1,4 +1,5 @@
-/* The report page (spec 4.5). */
+/* The report page (spec 4.5). One column below 1280 px; then the affected
+   services in a rail beside the stage, the ribbon and the story. */
 
 .panel {
   display: flex;
@@ -73,4 +74,35 @@
 .crumbs {
   margin-bottom: 12px;
   overflow-wrap: anywhere;
+}
+
+@media (min-width: 1280px) {
+  /* The rail spans both rows, so the story follows the ribbon however many
+     services the rail lists. */
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-rows: auto 1fr;
+    column-gap: 40px;
+    align-items: start;
+  }
+
+  .lead {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .side {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .side > section {
+    margin-top: 0;
+  }
+
+  .story {
+    grid-column: 1;
+    grid-row: 2;
+  }
 }

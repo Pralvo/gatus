@@ -2,7 +2,14 @@
 // 7-day history on load and every 5 minutes, 30-day uptime only when asked,
 // and single reports for report pages and time travel.
 
-import { keepPreviousData, useQueries, useQuery, type UseQueryResult } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQueries,
+  useQuery,
+  type UseQueryResult,
+} from '@tanstack/react-query'
+import { useEffect } from 'react'
 
 import { getEndpointStatus, getResponseTimeHistory, getSuiteStatus, getUptime } from '../api/gatus'
 import { HttpError } from '../api/http'
@@ -15,12 +22,13 @@ import type {
   StatusEvent,
   SuiteStatus,
 } from '../api/types'
+import { needOlderPage } from '../domain/browse/pages'
 import { checksPageSize } from '../domain/checks/table'
 import { refreshEveryMs } from '../domain/freshness/refresh'
 import { usualFromHistory } from '../domain/status/trend'
 import { minuteMs } from '../domain/time/format'
 
-import { queryKeys, type Live } from './cycle'
+import { emptyWhenMissing, queryKeys, type Live } from './cycle'
 
 export const perServiceEveryMs = 5 * minuteMs
 
@@ -172,19 +180,72 @@ export function useReport(id: string, options: Live = { live: true }): UseQueryR
   })
 }
 
-/** A page of the reports list, for /reports?page=n. */
-export function useReportsPage(
-  page: number,
-  options: Live = { live: true },
-): UseQueryResult<ReportPage> {
-  return useQuery({
-    queryKey: queryKeys.reports(page),
-    queryFn: () => getReports(page),
+export interface ReportPagesInput {
+  /** The first moment the view shows: pages are loaded until they reach it. */
+  from: number
+  /** A first page loaded elsewhere, such as the home page's: paging starts after it. */
+  first?: ReportPage
+  live: boolean
+  enabled?: boolean
+}
+
+export interface ReportPages {
+  /** Every loaded report, in the server's order, the given first page included. */
+  reports: Report[]
+  /** The server has reports after the last loaded page. */
+  more: boolean
+  /** Nothing has loaded yet. */
+  pending: boolean
+  /** An older page is being asked for. */
+  loadingOlder: boolean
+  /** The latest request failed; loaded pages are kept. */
+  failed: boolean
+  updatedAt: number
+  retry: () => void
+}
+
+/**
+ * Pages of /api/v1/reports, from the first (or after `first`), until they
+ * reach `from` (domain/browse/pages). A server without the reports plugin
+ * answers 404, read as nothing published.
+ */
+export function useReportPages(input: ReportPagesInput): ReportPages {
+  const { from, first, enabled = true } = input
+  const query = useInfiniteQuery(reportPagesOptions(input))
+  const pages = [...(first === undefined ? [] : [first]), ...(query.data?.pages ?? [])]
+  const wanted = enabled && query.isSuccess && needOlderPage(pages, from)
+  const { fetchNextPage, isFetching, isError } = query
+  useEffect(() => {
+    if (wanted && !isFetching && !isError) {
+      void fetchNextPage()
+    }
+  }, [wanted, isFetching, isError, fetchNextPage])
+  return {
+    reports: pages.flatMap((page) => page.reports),
+    more: pages.at(-1)?.more === true,
+    pending: first === undefined && enabled && query.isPending,
+    loadingOlder: query.isFetchingNextPage || (wanted && !isError),
+    failed: isError,
+    updatedAt: query.dataUpdatedAt,
+    retry: () => void query.refetch(),
+  }
+}
+
+function reportPagesOptions({ from, first, live, enabled = true }: ReportPagesInput) {
+  const start = first === undefined ? 1 : first.page + 1
+  return {
+    queryKey: queryKeys.reportPages(start),
+    queryFn: ({ pageParam }: { pageParam: number }) =>
+      emptyWhenMissing(() => getReports(pageParam), { reports: [], page: pageParam, more: false }),
+    initialPageParam: start,
+    getNextPageParam: (last: ReportPage, _all: ReportPage[], lastParam: number) =>
+      last.more ? lastParam + 1 : undefined,
+    enabled: enabled && (first === undefined || needOlderPage([first], from)),
     retry: false,
     staleTime: refreshEveryMs,
-    refetchInterval: options.live ? refreshEveryMs : false,
+    refetchInterval: live && first === undefined ? refreshEveryMs : (false as const),
     refetchIntervalInBackground: false,
-  })
+  }
 }
 
 /**

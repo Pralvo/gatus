@@ -29,7 +29,7 @@ export function ServiceRow({ service, results, reference, stale, travelAt }: Ser
   return (
     <li className={styles.row ?? ''}>
       <div className={styles.line1 ?? ''}>
-        <Link className={styles.name ?? ''} to={to}>
+        <Link className={`${styles.name ?? ''} pralvo-quiet`} to={to}>
           {service.name}
         </Link>
         <StatusWord tone={service.tone} icon={stateIcon(service.state)}>

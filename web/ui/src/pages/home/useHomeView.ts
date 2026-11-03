@@ -4,7 +4,7 @@
 
 import { useSearchParams } from 'react-router'
 
-import type { MaintenanceWindow, Report } from '../../api/plugins/types'
+import type { MaintenanceWindow, Report, ReportPage } from '../../api/plugins/types'
 import type { Result } from '../../api/types'
 import { usePageConfig } from '../../config/context'
 import { useMinuteCycle, useNow } from '../../data/cycle'
@@ -68,6 +68,8 @@ export interface HomeView {
   noticesFailed: string | null
   /** Reports for the record and past notices: with every update in time travel. */
   reports: Report[]
+  /** The first page of reports says there are more: older notices are paged in on request. */
+  reportsMore: boolean
   windows: MaintenanceWindow[]
   /** When monitoring began, from the events; null until they load. */
   recordStart: number | null
@@ -79,6 +81,7 @@ export interface HomeView {
 }
 
 const none: Report[] = []
+const noReports: ReportPage = { reports: none, page: 1, more: false }
 
 function siteOrigin(): string {
   return typeof window === 'undefined' ? '' : window.location.origin
@@ -91,6 +94,7 @@ type Shared = Pick<
   | 'atProblem'
   | 'inputs'
   | 'windows'
+  | 'reportsMore'
   | 'recordStart'
   | 'eventsLoading'
   | 'refreshing'
@@ -198,7 +202,7 @@ export function useHomeView(): HomeView {
   const keys = (statuses ?? []).map((status) => status.key)
   const events = useServiceEvents(keys, { live })
   const usual = useUsualSpeeds(keys, { live })
-  const listed = cycle.reports.data?.reports ?? none
+  const { reports: listed, more: reportsMore } = cycle.reports.data ?? noReports
   const full = useFullReports(live ? none : listed)
 
   const inputs = serviceInputs(statuses ?? [], events.byKey, usual.byKey)
@@ -212,6 +216,7 @@ export function useHomeView(): HomeView {
     atProblem: parsed === null || parsed.ok ? null : parsed.message,
     inputs,
     windows: cycle.maintenance.data ?? [],
+    reportsMore,
     recordStart: start,
     eventsLoading: events.loading,
     refreshing: cycle.statuses.isFetching,

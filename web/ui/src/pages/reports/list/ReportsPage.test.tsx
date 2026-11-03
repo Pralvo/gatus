@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
@@ -16,6 +16,19 @@ afterEach(stopServer)
 
 const open = (id: string, minute: number, title = `Open ${id}`) =>
   wire(report({ id, title, updatedAt: at(minute) }))
+const doneOn = (id: string, month: number, day: number) => {
+  const when = Date.UTC(2026, month - 1, day, 12)
+  return wire(
+    report({
+      id,
+      title: `Done ${id}`,
+      stage: 'resolved',
+      updates: [{ stage: 'resolved', at: when, message: 'Fixed.' }],
+      resolvedAt: when,
+      updatedAt: when,
+    }),
+  )
+}
 const done = (id: string, minute: number) =>
   wire(
     report({
@@ -32,10 +45,10 @@ function page(reports: unknown[], number = 1, more = false) {
   answer(`/api/v1/reports?page=${String(number)}`, { reports, page: number, more })
 }
 
-function titlesIn(name: string): string[] {
+function titlesIn(name: string, level = 3): string[] {
   const section = screen.getByRole('region', { name })
   return within(section)
-    .getAllByRole('heading', { level: 3 })
+    .getAllByRole('heading', { level })
     .map((heading) => heading.textContent)
 }
 
@@ -61,7 +74,8 @@ describe('the reports list', () => {
     renderAt('/reports')
     await screen.findByRole('heading', { level: 2, name: 'Active' })
     expect(titlesIn('Active')).toEqual(['Open o2', 'Open o1'])
-    expect(titlesIn('Past')).toEqual(['Done d2', 'Done d1'])
+    expect(titlesIn('Past', 4)).toEqual(['Done d2', 'Done d1'])
+    expect(titlesIn('Past')).toEqual(['November 2026'])
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
     expect(headings).toEqual(['Active', 'Past'])
   })
@@ -77,7 +91,8 @@ describe('the reports list', () => {
     page([])
     renderAt('/reports')
     expect(await screen.findByText('No reports have been published.')).toBeVisible()
-    expect(screen.queryByRole('navigation', { name: 'Pages of reports' })).toBeNull()
+    expect(screen.queryByRole('search', { name: 'Reports' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Show older reports' })).toBeNull()
   })
 
   it('reads a server without the reports plugin as nothing published', async () => {
@@ -101,38 +116,52 @@ describe('the reports list', () => {
     expect(await screen.findByRole('link', { name: 'Open o1' })).toBeVisible()
   })
 
-  it('pages with older and newer links and moves focus to the heading', async () => {
-    page([open('o1', 50)], 1, true)
-    page([done('d1', 20)], 2, false)
+  it('pages in older reports only as far as the months shown need', async () => {
+    page([open('o1', 50), doneOn('d1', 10, 20)], 1, true)
+    page([doneOn('d2', 10, 5), doneOn('d3', 8, 10)], 2, true)
+    page([doneOn('d4', 7, 1)], 3, false)
+    renderAt('/reports')
+    expect(await screen.findByRole('link', { name: 'Done d2' })).toBeVisible()
+    expect(fetched()).toEqual(['/api/v1/reports?page=1', '/api/v1/reports?page=2'])
+    expect(titlesIn('Past')).toEqual(['October 2026'])
+    expect(screen.queryByRole('link', { name: 'Done d3' })).toBeNull()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Show older reports' }))
+    expect(window.location.search).toBe('?months=3')
+    expect(screen.queryByRole('link', { name: 'Done d3' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Show older reports' }))
+    expect(await screen.findByRole('link', { name: 'Done d3' })).toBeVisible()
+    await waitFor(() => {
+      expect(fetched()).toContain('/api/v1/reports?page=3')
+    })
+    expect(screen.queryByRole('link', { name: 'Done d4' })).toBeNull()
+    expect(titlesIn('Past')).toEqual(['October 2026', 'August 2026'])
+    expect(screen.getByRole('button', { name: 'Show older reports' })).toHaveFocus()
+  })
+
+  it('filters by state and title, keeps the view in the address and offers a way back', async () => {
+    page([open('o1', 50, 'Media slow'), done('d1', 80)])
     renderAt('/reports')
     const user = userEvent.setup()
-    const nav = await screen.findByRole('navigation', { name: 'Pages of reports' })
-    expect(within(nav).queryByRole('link', { name: 'Newer reports' })).toBeNull()
-    await user.click(within(nav).getByRole('link', { name: 'Older reports' }))
-    expect(await screen.findByRole('link', { name: 'Done d1' })).toBeVisible()
-    expect(window.location.search).toBe('?page=2')
-    expect(fetched()).toContain('/api/v1/reports?page=2')
-    expect(screen.getByRole('heading', { level: 1, name: 'Reports' })).toHaveFocus()
-    const newer = screen.getByRole('link', { name: 'Newer reports' })
-    expect(newer).toHaveAttribute('href', '/reports')
-    expect(screen.queryByRole('link', { name: 'Older reports' })).toBeNull()
+    await screen.findByRole('link', { name: 'Media slow' })
+    await user.selectOptions(screen.getByRole('combobox', { name: 'State' }), 'resolved')
+    expect(screen.queryByRole('region', { name: 'Active' })).toBeNull()
+    expect(titlesIn('Past', 4)).toEqual(['Done d1'])
+    await user.type(screen.getByRole('searchbox', { name: 'Search titles' }), 'media')
+    expect(window.location.search).toBe('?state=resolved&search=media')
+    expect(screen.getByRole('searchbox', { name: 'Search titles' })).toHaveFocus()
+    expect(screen.getByText(/^No reports match these filters since October 2026\./)).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    expect(window.location.search).toBe('')
+    expect(screen.getByRole('link', { name: 'Media slow' })).toBeVisible()
   })
 
-  it('treats a malformed page number as the first page', async () => {
-    page([open('o1', 50)])
-    renderAt('/reports?page=abc')
+  it('reads a shared view and ignores what it cannot read, such as an old page number', async () => {
+    page([open('o1', 50), done('d1', 80)])
+    renderAt('/reports?page=abc&state=unresolved&months=-1')
     expect(await screen.findByRole('link', { name: 'Open o1' })).toBeVisible()
+    expect(screen.queryByRole('link', { name: 'Done d1' })).toBeNull()
     expect(fetched()).toEqual(['/api/v1/reports?page=1'])
-  })
-
-  it('offers the newest reports from an empty later page', async () => {
-    page([], 3)
-    renderAt('/reports?page=3')
-    expect(await screen.findByText(/There are no reports on this page\./)).toBeVisible()
-    expect(screen.getByRole('link', { name: 'See the newest reports' })).toHaveAttribute(
-      'href',
-      '/reports',
-    )
   })
 
   it('shows the feed links only when feeds are on', async () => {

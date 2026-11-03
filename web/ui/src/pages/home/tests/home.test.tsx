@@ -45,7 +45,7 @@ describe('home page', () => {
     expect(row('Media')).toHaveTextContent('As fast as usual: 70 ms now, 70 ms usually.')
     expect(screen.getByText('Updated just now · refreshes every minute')).toBeVisible()
     expect(screen.getByRole('button', { name: 'Is it just me?' })).toBeVisible()
-    expect(screen.queryByRole('searchbox')).toBeNull()
+    expect(screen.queryByRole('searchbox', { name: 'Search' })).toBeNull()
     expect(await screen.findByRole('group', { name: 'Daily record, 91 days' })).toBeVisible()
   })
 

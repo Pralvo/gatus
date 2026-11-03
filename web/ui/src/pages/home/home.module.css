@@ -1,4 +1,7 @@
-/* The home page (design spec 4.1 and 10): one column, the same order at every width. */
+/* The home page (design spec 4.1 and 10). One reading order at every width:
+   one column on a phone and a tablet; from 1280 px a main column (services,
+   record) and a rail (what is happening, past notices) under the full-width
+   answer panel. */
 
 .panel {
   position: relative;
@@ -181,6 +184,37 @@
   }
 }
 
+@media (min-width: 1280px) {
+  .panel {
+    padding: 28px 32px;
+  }
+
+  /* The main column spans both rows; the rail's second row takes the rest, so
+     past notices sit right under the story however long the services are. */
+  .columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-rows: auto 1fr;
+    column-gap: 40px;
+    align-items: start;
+  }
+
+  .railTop {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .mainColumn {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .railBottom {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
 .storyMeta {
   display: flex;
   flex-wrap: wrap;
@@ -188,6 +222,12 @@
   align-items: center;
   font-size: 14px;
   color: var(--fgColor-muted);
+}
+
+.storyMeta + .storyText + a {
+  display: inline-block;
+  min-height: 24px;
+  line-height: 24px;
 }
 
 .storyText {
@@ -224,6 +264,7 @@
 }
 
 .dl dd {
+  max-width: 72ch;
   margin: 0 0 8px;
   overflow-wrap: anywhere;
 }
@@ -260,7 +301,7 @@
   font-weight: 600;
 }
 
-.h4 {
+.dayLabel {
   margin: 0 0 2px;
   font-size: 14px;
   font-weight: 600;

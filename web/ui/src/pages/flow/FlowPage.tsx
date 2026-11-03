@@ -91,7 +91,7 @@ function LoadedFlow({ status, name, now, headingRef }: LoadedFlowProps) {
         </Banner>
       ) : null}
       {run === null ? null : (
-        <>
+        <div className="pralvo-split">
           <Section id="steps-heading" title="Steps">
             <p className={styles.lead ?? ''}>
               The run at <When ms={run.at} reference={now} />, in order. {runSentence(run, steps)}
@@ -112,7 +112,7 @@ function LoadedFlow({ status, name, now, headingRef }: LoadedFlowProps) {
               }}
             />
           </Section>
-        </>
+        </div>
       )}
     </>
   )

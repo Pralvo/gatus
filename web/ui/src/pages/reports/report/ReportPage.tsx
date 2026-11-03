@@ -53,7 +53,11 @@ interface LoadedProps {
   stale: string | null
 }
 
-/** The report once loaded: stage panel, ribbon, services and story. */
+/**
+ * The report once loaded: stage panel, ribbon, services and story. From
+ * 1280 px the affected services sit in a rail beside the rest; the reading
+ * order stays the same.
+ */
 function LoadedReport({ report, now, stale }: LoadedProps) {
   const { header } = usePageConfig()
   const keys = report.endpoints.map((endpoint) => endpoint.key)
@@ -79,32 +83,40 @@ function LoadedReport({ report, now, stale }: LoadedProps) {
       {stale === null ? null : (
         <Banner variant="warning" title="Not refreshed" hideTitle description={stale} />
       )}
-      <StagePanel report={report} sentence={sentence} ticket={ticket} origin={origin} />
-      <Section id="report-glance" title="At a glance">
-        <div className={commonStyles.box ?? ''}>
-          <RibbonFigure
-            picture={ribbon(report, story, now)}
-            lines={ribbonText(report, story, now)}
-            failures={failures}
-          />
+      <div className={styles.layout ?? ''}>
+        <div className={styles.lead ?? ''}>
+          <StagePanel report={report} sentence={sentence} ticket={ticket} origin={origin} />
+          <Section id="report-glance" title="At a glance">
+            <div className={commonStyles.box ?? ''}>
+              <RibbonFigure
+                picture={ribbon(report, story, now)}
+                lines={ribbonText(report, story, now)}
+                failures={failures}
+              />
+            </div>
+          </Section>
         </div>
-      </Section>
-      <Section id="report-affected" title="Affected services">
-        <div className={commonStyles.box ?? ''}>
-          <AffectedList endpoints={report.endpoints} links />
+        <div className={styles.side ?? ''}>
+          <Section id="report-affected" title="Affected services">
+            <div className={commonStyles.box ?? ''}>
+              <AffectedList endpoints={report.endpoints} links />
+            </div>
+          </Section>
         </div>
-      </Section>
-      <Section id="report-story" title="The story">
-        <p className={styles.lede ?? ''}>
-          Checks and report updates, oldest first. Times in UTC.
-          {failures === 'failed'
-            ? ' Check events could not be loaded, so only the report updates are shown.'
-            : ''}
-        </p>
-        <div className={commonStyles.box ?? ''}>
-          <StoryTimeline items={story.items} reference={report.resolvedAt ?? now} />
+        <div className={styles.story ?? ''}>
+          <Section id="report-story" title="The story">
+            <p className={styles.lede ?? ''}>
+              Checks and report updates, oldest first. Times in UTC.
+              {failures === 'failed'
+                ? ' Check events could not be loaded, so only the report updates are shown.'
+                : ''}
+            </p>
+            <div className={commonStyles.box ?? ''}>
+              <StoryTimeline items={story.items} reference={report.resolvedAt ?? now} />
+            </div>
+          </Section>
         </div>
-      </Section>
+      </div>
     </>
   )
 }
