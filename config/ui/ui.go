@@ -1,9 +1,12 @@
+// Changed by Pralvo: adds footer-links and source-link for the page footer.
+
 package ui
 
 import (
 	"bytes"
 	"errors"
 	"html/template"
+	"strings"
 
 	"github.com/TwiN/gatus/v5/storage"
 	static "github.com/TwiN/gatus/v5/web"
@@ -24,6 +27,7 @@ const (
 	defaultSortBy               = "name"
 	defaultFilterBy             = "none"
 	defaultLoginSubtitle        = "System Monitoring Dashboard"
+	defaultSourceLink           = "https://github.com/TwiN/gatus"
 )
 
 var (
@@ -32,6 +36,8 @@ var (
 	ErrButtonValidationFailed = errors.New("invalid button configuration: missing required name or link")
 	ErrInvalidDefaultSortBy   = errors.New("invalid default-sort-by value: must be 'name', 'group', or 'health'")
 	ErrInvalidDefaultFilterBy = errors.New("invalid default-filter-by value: must be 'none', 'failing', or 'unstable'")
+	ErrInvalidFooterLink      = errors.New("invalid footer-links entry: needs a name and a link starting with https://, http:// or /")
+	ErrInvalidSourceLink      = errors.New("invalid source-link value: must start with https://, http:// or /")
 )
 
 // Config is the configuration for the UI of Gatus
@@ -50,6 +56,8 @@ type Config struct {
 	DefaultSortBy           string   `yaml:"default-sort-by,omitempty"`        // DefaultSortBy is the default sort option ('name', 'group', 'health')
 	DefaultFilterBy         string   `yaml:"default-filter-by,omitempty"`      // DefaultFilterBy is the default filter option ('none', 'failing', 'unstable')
 	LoginSubtitle           string   `yaml:"login-subtitle,omitempty"`         // LoginSubtitle is the subtitle displayed on the OIDC login page
+	FooterLinks             []Button `yaml:"footer-links,omitempty"`           // FooterLinks are shown in the footer, before "Powered by Gatus"
+	SourceLink              string   `yaml:"source-link,omitempty"`            // SourceLink is opened by the GitHub icon in the footer
 	//////////////////////////////////////////////
 	// Non-configurable - used for UI rendering //
 	//////////////////////////////////////////////
@@ -98,6 +106,7 @@ func GetDefaultConfig() *Config {
 		DefaultSortBy:          defaultSortBy,
 		DefaultFilterBy:        defaultFilterBy,
 		LoginSubtitle:          defaultLoginSubtitle,
+		SourceLink:             defaultSourceLink,
 		MaximumNumberOfResults: storage.DefaultMaximumNumberOfResults,
 		Favicon: Favicon{
 			Default:   defaultFavicon,
@@ -163,6 +172,16 @@ func (cfg *Config) ValidateAndSetDefaults() error {
 			return err
 		}
 	}
+	for _, footerLink := range cfg.FooterLinks {
+		if len(footerLink.Name) == 0 || !isPageLink(footerLink.Link) {
+			return ErrInvalidFooterLink
+		}
+	}
+	if len(cfg.SourceLink) == 0 {
+		cfg.SourceLink = defaultSourceLink
+	} else if !isPageLink(cfg.SourceLink) {
+		return ErrInvalidSourceLink
+	}
 	// Validate that the template works
 	t, err := template.ParseFS(static.FileSystem, static.IndexPath)
 	if err != nil {
@@ -170,6 +189,12 @@ func (cfg *Config) ValidateAndSetDefaults() error {
 	}
 	var buffer bytes.Buffer
 	return t.Execute(&buffer, ViewData{UI: cfg, Theme: "dark"})
+}
+
+// isPageLink reports whether link is a web address or a path on this site. The page
+// puts these links in href attributes, so other schemes, such as javascript:, are refused.
+func isPageLink(link string) bool {
+	return strings.HasPrefix(link, "https://") || strings.HasPrefix(link, "http://") || strings.HasPrefix(link, "/")
 }
 
 type ViewData struct {
