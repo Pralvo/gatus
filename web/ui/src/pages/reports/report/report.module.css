@@ -1,0 +1,76 @@
+/* The report page (spec 4.5). */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stage {
+  margin: 0;
+}
+
+.sentence {
+  margin: 0;
+  font-size: 16px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* Empty until a copy, so it takes no room; it stays in the page to be announced. */
+.status {
+  margin: 0;
+}
+
+.lede {
+  margin: 0 0 12px;
+  color: var(--fgColor-muted);
+  font-size: 14px;
+}
+
+.timeline {
+  margin: 0;
+  padding: 0;
+}
+
+.when {
+  margin: 0 0 2px;
+  font-size: 14px;
+  color: var(--fgColor-muted);
+}
+
+.badgeDanger {
+  color: var(--fgColor-danger);
+}
+
+.badgeSevere {
+  color: var(--fgColor-severe);
+}
+
+.badgeAttention {
+  color: var(--fgColor-attention);
+}
+
+.badgeSuccess {
+  color: var(--fgColor-success);
+}
+
+.badgeNeutral {
+  color: var(--fgColor-muted);
+}
+
+.crumbs {
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}

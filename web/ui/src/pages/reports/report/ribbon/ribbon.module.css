@@ -1,0 +1,48 @@
+/* The "At a glance" ribbon. Primer has no timeline chart, so this is drawn here. */
+
+.ribbon {
+  display: block;
+  width: 100%;
+  height: 120px;
+  overflow: visible;
+}
+
+.ribbon text {
+  fill: var(--fgColor-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ribbon .number {
+  fill: var(--fgColor-default);
+  font-weight: 600;
+}
+
+.failed {
+  fill: var(--pralvo-cell-failed);
+}
+
+.open {
+  fill: none;
+  stroke: var(--fgColor-default);
+  stroke-width: 1.5;
+}
+
+.stage {
+  stroke: var(--fgColor-default);
+  stroke-width: 1.5;
+}
+
+.axis {
+  stroke: var(--control-borderColor-rest);
+}
+
+.note {
+  font-style: italic;
+}
+
+.lines {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  font-size: 14px;
+}

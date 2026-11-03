@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { at, event, report } from '../../test/fixtures'
 
-import { reportStory, ribbonText, stageSentence } from './report'
+import { affectedServices, reportStory, ribbonText, stageSentence } from './report'
 
 const resolved = report({
   stage: 'resolved',
@@ -114,5 +114,22 @@ describe('stage panel and ribbon', () => {
     expect(ribbonText(open, reportStory(open, [], at(90)), at(90))).toEqual([
       'Report open: 13:44 to now. Stages: 1 Investigating 13:44.',
     ])
+  })
+})
+
+describe('affectedServices', () => {
+  it('pairs each named service with its loaded events and leaves the rest without', () => {
+    const both = report({
+      endpoints: [
+        { key: 'media', name: 'Media', impact: 'degraded' },
+        { key: 'blog', name: 'Blog', impact: 'major' },
+      ],
+    })
+    const services = affectedServices(both, new Map([['media', media.events]]))
+    expect(services).toEqual([
+      { key: 'media', name: 'Media', events: media.events },
+      { key: 'blog', name: 'Blog' },
+    ])
+    expect('events' in (services[1] ?? {})).toBe(false)
   })
 })

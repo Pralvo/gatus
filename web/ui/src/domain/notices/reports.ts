@@ -94,3 +94,41 @@ export function impactOn(reports: ActiveReport[], key: string): ReportedImpact |
 export function stageWord(stage: ReportStage): string {
   return `${stage.charAt(0).toUpperCase()}${stage.slice(1)}`
 }
+
+const impactWords = new Map<Impact, string>([
+  ['major', 'Down'],
+  ['partial', 'Partly down'],
+  ['degraded', 'Degraded'],
+  ['maintenance', 'Maintenance'],
+])
+
+/** A report's impact in the service words of spec section 7: "Down", "Partly down", ... */
+export function impactWord(impact: Impact): string {
+  return impactWords.get(impact) ?? 'Degraded'
+}
+
+/** The reports list, split for its "Active" and "Past" headings (spec 4.4). */
+export interface ReportGroups {
+  /** Not yet resolved, most recently changed first. */
+  active: Report[]
+  /** Resolved, most recently changed first. */
+  past: Report[]
+}
+
+function isResolved(report: Report): boolean {
+  return report.stage === 'resolved' || report.resolvedAt !== undefined
+}
+
+/** Unresolved reports first, then the rest; each group by most recent change. */
+export function groupReports(reports: Report[]): ReportGroups {
+  const newestFirst = [...reports].sort((a, b) => b.updatedAt - a.updatedAt)
+  return {
+    active: newestFirst.filter((report) => !isResolved(report)),
+    past: newestFirst.filter(isResolved),
+  }
+}
+
+/** ?page= for /reports: a whole number from 1; anything else is the first page. */
+export function reportsPageParam(raw: string | null): number {
+  return raw !== null && /^[1-9]\d{0,5}$/.test(raw) ? Number(raw) : 1
+}

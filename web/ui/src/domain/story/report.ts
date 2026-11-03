@@ -51,6 +51,24 @@ function publishedAfter(minutes: number): string {
     : `Published ${minutesText(minutes)} after checks first failed.`
 }
 
+/**
+ * The report's services with whatever events have loaded for them, ready for
+ * reportStory(). A service whose events have not loaded is left without any.
+ */
+export function affectedServices(
+  report: Report,
+  events: Map<string, StatusEvent[]>,
+): ReportStoryService[] {
+  return report.endpoints.map((endpoint) => {
+    const loaded = events.get(endpoint.key)
+    const service: ReportStoryService = { key: endpoint.key, name: endpoint.name }
+    if (loaded !== undefined) {
+      service.events = loaded
+    }
+    return service
+  })
+}
+
 /** The story of a report. `now` closes the span of a report that is still open. */
 export function reportStory(
   report: Report,
