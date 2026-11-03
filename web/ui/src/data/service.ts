@@ -2,13 +2,20 @@
 // 7-day history on load and every 5 minutes, 30-day uptime only when asked,
 // and single reports for report pages and time travel.
 
-import { useQueries, useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { keepPreviousData, useQueries, useQuery, type UseQueryResult } from '@tanstack/react-query'
 
-import { getEndpointStatus, getResponseTimeHistory, getUptime } from '../api/gatus'
+import { getEndpointStatus, getResponseTimeHistory, getSuiteStatus, getUptime } from '../api/gatus'
 import { HttpError } from '../api/http'
 import { getReport, getReports } from '../api/plugins/reports'
 import type { Report, ReportPage } from '../api/plugins/types'
-import type { StatusEvent } from '../api/types'
+import type {
+  EndpointStatus,
+  HistoryWindow,
+  ResponseTimeHistory,
+  StatusEvent,
+  SuiteStatus,
+} from '../api/types'
+import { checksPageSize } from '../domain/checks/table'
 import { refreshEveryMs } from '../domain/freshness/refresh'
 import { usualFromHistory } from '../domain/status/trend'
 import { minuteMs } from '../domain/time/format'
@@ -93,6 +100,58 @@ export function useUptime(key: string, enabled: boolean): UseQueryResult<number>
     enabled,
     staleTime: Number.POSITIVE_INFINITY,
     retry: false,
+  })
+}
+
+/**
+ * One service's hourly response times for a window. The 7-day window shares
+ * its cache with useUsualSpeeds. Time travel asks for 30 days and cuts it.
+ */
+export function useResponseTimes(
+  key: string,
+  window: HistoryWindow,
+  options: Live & { enabled: boolean },
+): UseQueryResult<ResponseTimeHistory> {
+  return useQuery({
+    queryKey: queryKeys.history(key, window),
+    queryFn: () => getResponseTimeHistory(key, window),
+    enabled: options.enabled,
+    placeholderData: keepPreviousData,
+    ...slowOptions(options),
+  })
+}
+
+/**
+ * A page of one service's checks, 50 to a page, newest page first. A 404
+ * means there is no such service and is not retried. The newest page
+ * refreshes with the minute cycle; older pages stay as they loaded.
+ */
+export function useCheckPage(
+  key: string,
+  page: number,
+  options: Live & { enabled: boolean },
+): UseQueryResult<EndpointStatus> {
+  const refresh = options.live && page === 1
+  return useQuery({
+    queryKey: queryKeys.checks(key, page),
+    queryFn: () => getEndpointStatus(key, page, checksPageSize),
+    enabled: options.enabled,
+    retry: false,
+    staleTime: refreshEveryMs,
+    refetchInterval: refresh ? refreshEveryMs : false,
+    refetchIntervalInBackground: false,
+  })
+}
+
+/** One flow (a Gatus suite) and its kept runs, refreshed every minute. A 404 is not retried. */
+export function useFlow(key: string): UseQueryResult<SuiteStatus> {
+  return useQuery({
+    queryKey: queryKeys.flow(key),
+    queryFn: () => getSuiteStatus(key),
+    retry: false,
+    staleTime: refreshEveryMs,
+    refetchInterval: refreshEveryMs,
+    refetchIntervalInBackground: false,
   })
 }
 

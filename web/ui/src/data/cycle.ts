@@ -17,7 +17,7 @@ import { HttpError } from '../api/http'
 import { getMaintenance } from '../api/plugins/maintenance'
 import { getReports } from '../api/plugins/reports'
 import type { MaintenanceWindow, ReportPage } from '../api/plugins/types'
-import type { EndpointStatus, ServerConfig } from '../api/types'
+import type { EndpointStatus, HistoryWindow, ServerConfig } from '../api/types'
 import { usePageConfig } from '../config/context'
 import { refreshDelayMs, refreshEveryMs, type RefreshState } from '../domain/freshness/refresh'
 
@@ -30,8 +30,10 @@ export const queryKeys = {
   maintenance: ['maintenance'] as const,
   config: ['config'] as const,
   events: (key: string) => ['events', key] as const,
-  history: (key: string) => ['history', key, '7d'] as const,
+  history: (key: string, window: HistoryWindow = '7d') => ['history', key, window] as const,
   uptime: (key: string) => ['uptime', key, '30d'] as const,
+  checks: (key: string, page: number) => ['checks', key, page] as const,
+  flow: (key: string) => ['flow', key] as const,
 }
 
 export interface Live {
