@@ -7,5 +7,6 @@ import (
 	_ "github.com/TwiN/gatus/v5/plugins/database"
 	_ "github.com/TwiN/gatus/v5/plugins/feeds"
 	_ "github.com/TwiN/gatus/v5/plugins/hello"
+	_ "github.com/TwiN/gatus/v5/plugins/incidents"
 	_ "github.com/TwiN/gatus/v5/plugins/maintenancewindows"
 )

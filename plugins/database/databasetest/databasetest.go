@@ -37,6 +37,14 @@ func SQLite(t *testing.T) *database.DB {
 // removes. It skips the test, by name, when no server is configured.
 func Postgres(t *testing.T) *database.DB {
 	t.Helper()
+	return open(t, database.Config{Type: string(database.Postgres), Path: PostgresDSN(t)})
+}
+
+// PostgresDSN creates a schema that the test removes and returns a connection
+// string that uses it, for a test that configures the plugin itself. It skips the
+// test, by name, when no server is configured.
+func PostgresDSN(t *testing.T) string {
+	t.Helper()
 	dsn := os.Getenv(EnvPostgres)
 	if dsn == "" {
 		t.Skipf("%s is not set, so this did not run against Postgres", EnvPostgres)
@@ -55,7 +63,7 @@ func Postgres(t *testing.T) *database.DB {
 			t.Errorf("drop schema: %v", err)
 		}
 	})
-	return open(t, database.Config{Type: string(database.Postgres), Path: withSearchPath(t, dsn, schema)})
+	return withSearchPath(t, dsn, schema)
 }
 
 func withSearchPath(t *testing.T, dsn, schema string) string {
